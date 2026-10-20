@@ -1,8 +1,8 @@
-# Calorie Compass
+Calorie Compass
 
-**A photo-assisted calorie-counting and personal health-tracking web application.**
+A photo-assisted calorie-counting and personal health-tracking web application.
 
-## Overview
+Overview
 
 Calorie Compass is an academic Software Engineering project designed to help users monitor their food intake, physical activity, and progress toward personal health goals.
 
@@ -10,7 +10,7 @@ The application aims to identify likely foods from photographs, estimate calorie
 
 All calorie and activity values are estimates, not medical advice.
 
-## Planned Features
+Planned Features
 
 - User registration, login, and profile management
 - Food photo upload and food-recognition assistance
@@ -22,25 +22,25 @@ All calorie and activity values are estimates, not medical advice.
 - Exercise suggestions and general fitness tips
 - Weight history and progress visualization
 
-## Planned Technology Stack
+Planned Technology Stack
 
-- **Frontend:** HTML, CSS, JavaScript
-- **Backend:** Node.js
-- **Database:** MySQL
-- **Version control:** Git and GitHub
-- **Project management:** Trello
-- **Team communication:** Discord
-- **Time tracking:** Toggl Track
+- Frontend: HTML, CSS, JavaScript
+- Backend: Node.js
+- Database: MySQL
+- Version control: Git and GitHub
+- Project management: Trello
+- Team communication: Discord
+- Time tracking: Toggl Track
 
 The technology choices and integrations will be finalized during implementation. Food-recognition and nutrition-data solutions will be selected based on feasibility, accuracy, and availability within the project budget.
 
-## Project Status
+Project Status
 
-**Current phase:** Requirements, system design, and initial repository setup.
+Current phase: Requirements, system design, and initial repository setup.
 
 The application is under development. Features listed above are planned and should not be considered implemented until they are completed and tested.
 
-## Repository Structure
+Repository Structure
 
 The structure will evolve as development progresses. The planned organization is:
 
@@ -48,22 +48,19 @@ The structure will evolve as development progresses. The planned organization is
 calorie-compass/
 ├── README.md
 ├── index.html
-├── css/
-├── js/
-├── server/
-├── tests/
-└── docs/
+├── style.css/
+├── main.js/
 ```
 
 The final structure will depend on the backend setup and the team's implementation decisions.
 
-## Getting Started
+Getting Started
 
 Development setup instructions will be added once the required runtime, dependencies, database, and environment variables have been configured.
 
 Do not commit passwords, database credentials, API keys, or other secrets to this repository.
 
-## Development Workflow
+Development Workflow
 
 1. Pick an assigned task from Trello.
 2. Create a branch from the latest `main`.
@@ -73,17 +70,17 @@ Do not commit passwords, database credentials, API keys, or other secrets to thi
 6. Ask a teammate to review the changes.
 7. Merge after review and resolve any requested changes.
 
-## Documentation
+Documentation
 
 Refer to the GitHub Wiki for project requirements, architecture, setup instructions, development conventions, and testing documentation.
 
-## Disclaimer
+Disclaimer
 
 Calorie Compass is an educational project for general wellness tracking. It does not diagnose medical conditions or replace professional nutritional or medical guidance. Food recognition, portion sizes, calorie estimates, and exercise estimates may be inaccurate.
 
-## Project Team
+Project Team
 
 Student development team of three members.
 
-**Project type:** Academic Software Engineering Project  
-**Planned development period:** October–November 2026
+Project type: Academic Software Engineering Project  
+Planned development period: October–November 2026
