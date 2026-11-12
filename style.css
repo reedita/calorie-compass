@@ -1,0 +1,180 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f3f7f4;
+    color: #26352c;
+    min-height: 100vh;
+}
+
+header {
+    background: #287a55;
+    color: white;
+    text-align: center;
+    padding: 30px 15px;
+}
+
+header h1 {
+    font-size: 30px;
+    margin-bottom: 8px;
+}
+
+header p {
+    font-size: 15px;
+}
+
+main {
+    width: 90%;
+    max-width: 950px;
+    margin: 35px auto;
+}
+
+#auth-section {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.07);
+}
+
+.card h2 {
+    color: #287a55;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #d5ded8;
+    border-radius: 7px;
+    font-size: 14px;
+    background: white;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #287a55;
+}
+
+button {
+    padding: 12px;
+    background: #287a55;
+    color: white;
+    border: none;
+    border-radius: 7px;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+button:hover {
+    background: #1e6041;
+}
+
+.message {
+    margin-top: 12px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#profile-section {
+    max-width: 550px;
+    margin: 30px auto;
+}
+
+#profile-section label {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.logout-button {
+    background: #b74343;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.logout-button:hover {
+    background: #923333;
+}
+
+@media (max-width: 650px) {
+    #auth-section {
+        grid-template-columns: 1fr;
+    }
+
+    main {
+        width: 94%;
+    }
+}
+
+/* =================================
+   FOOD DIARY DASHBOARD
+================================= */
+
+.diary-summary {
+    background: #f0f8f3;
+    padding: 18px;
+    border-radius: 10px;
+    margin: 20px 0;
+}
+
+.diary-summary h3 {
+    margin-top: 18px;
+    color: #245c3a;
+}
+
+.diary-summary p {
+    margin: 10px 0;
+}
+
+#food-entries-list {
+    margin-top: 15px;
+}
+
+.food-entry-card {
+    background: #f8faf8;
+    border: 1px solid #dce8df;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 12px;
+}
+
+.food-entry-card h4 {
+    color: #245c3a;
+    margin: 0 0 8px;
+}
+
+.food-entry-card p {
+    margin-bottom: 12px;
+}
+
+.food-entry-card button {
+    margin-right: 8px;
+    margin-top: 5px;
+}
+
+#food-submit-button {
+    margin-top: 12px;
+}

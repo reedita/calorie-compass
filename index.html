@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calorie Compass</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Calorie Compass</h1>
+        <p>Your personal health and calorie tracker</p>
+    </header>
+
+    <main>
+        <section id="auth-section">
+
+            <div class="card">
+                <h2>Create Account</h2>
+
+                <form id="register-form">
+                    <input type="text" id="full_name" placeholder="Full Name" required>
+                    <input type="email" id="register-email" placeholder="Email Address" required>
+                    <input type="password" id="register-password" placeholder="Password (minimum 8 characters)" required minlength="8">
+                    <input type="number" id="age" placeholder="Age" min="1" max="120">
+                    <input type="number" id="height_cm" placeholder="Height (cm)" min="1" step="0.01">
+                    <input type="number" id="weight_kg" placeholder="Weight (kg)" min="1" step="0.01">
+
+                    <select id="activity_level">
+                        <option value="">Select Activity Level</option>
+                        <option value="sedentary">Sedentary</option>
+                        <option value="light">Lightly Active</option>
+                        <option value="moderate">Moderately Active</option>
+                        <option value="active">Very Active</option>
+                    </select>
+
+                    <select id="goal">
+                        <option value="">Select Your Goal</option>
+                        <option value="lose_weight">Lose Weight</option>
+                        <option value="maintain_weight">Maintain Weight</option>
+                        <option value="gain_weight">Gain Weight</option>
+                    </select>
+
+                    <button type="submit">Register</button>
+                </form>
+
+                <p id="register-message" class="message"></p>
+            </div>
+
+            <div class="card">
+                <h2>Login</h2>
+
+                <form id="login-form">
+                    <input type="email" id="login-email" placeholder="Email Address" required>
+                    <input type="password" id="login-password" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                </form>
+
+                <p id="login-message" class="message"></p>
+            </div>
+
+        </section>
+
+        <!-- User Profile -->
+        <section id="profile-section" class="card hidden">
+            <h2>My Profile</h2>
+
+            <form id="profile-form">
+                <label>Full Name</label>
+                <input type="text" id="profile-name" required>
+
+                <label>Age</label>
+                <input type="number" id="profile-age" min="1" max="120">
+
+                <label>Height (cm)</label>
+                <input type="number" id="profile-height" min="1" step="0.01">
+
+                <label>Weight (kg)</label>
+                <input type="number" id="profile-weight" min="1" step="0.01">
+
+                <label>Activity Level</label>
+                <select id="profile-activity">
+                    <option value="sedentary">Sedentary</option>
+                    <option value="light">Lightly Active</option>
+                    <option value="moderate">Moderately Active</option>
+                    <option value="active">Very Active</option>
+                </select>
+
+                <label>Goal</label>
+                <select id="profile-goal">
+                    <option value="lose_weight">Lose Weight</option>
+                    <option value="maintain_weight">Maintain Weight</option>
+                    <option value="gain_weight">Gain Weight</option>
+                </select>
+
+                <button type="submit">Update Profile</button>
+            </form>
+
+            <p id="profile-message" class="message"></p>
+
+            <!-- Navigation Button to Food Diary -->
+            <button type="button" id="goto-diary-btn" class="secondary-button" style="margin-top: 15px; width: 100%;">Go to Food Diary</button>
+            <button type="button" id="logout-button" class="logout-button" style="margin-top: 10px;">Logout</button>
+        </section>
+
+        <!-- Food Diary Dashboard -->
+        <section id="food-diary-section" class="card hidden">
+
+            <!-- Back to Profile Button -->
+            <button type="button" id="back-to-profile-btn" class="secondary-button" style="margin-bottom: 15px;">← Back to Profile</button>
+
+            <h2>My Food Diary</h2>
+            <p>Track your daily meals and calories.</p>
+
+            <div class="diary-summary">
+                <label for="diary-date">Select Date</label>
+                <input type="date" id="diary-date">
+
+                <h3>Daily Summary</h3>
+                <p>Total Food Entries: <strong id="total-entries">0</strong></p>
+                <p>Total Calories: <strong id="total-calories">0</strong> kcal</p>
+            </div>
+
+            <h3>Add Food Entry</h3>
+
+            <form id="food-form">
+
+                <label for="food-name">Food Name</label>
+                <input type="text" id="food-name" placeholder="e.g. Rice" required>
+
+                <label for="meal-type">Meal Type</label>
+                <select id="meal-type" required>
+                    <option value="">Select Meal</option>
+                    <option value="Breakfast">Breakfast</option>
+                    <option value="Lunch">Lunch</option>
+                    <option value="Dinner">Dinner</option>
+                    <option value="Snack">Snack</option>
+                </select>
+
+                <label for="food-portion">Portion</label>
+                <input type="text" id="food-portion" placeholder="e.g. 1 cup">
+
+                <label for="food-calories">Calories (kcal)</label>
+                <input type="number" id="food-calories" min="1" step="0.01" placeholder="e.g. 250" required>
+
+                <label for="food-date">Entry Date</label>
+                <input type="date" id="food-date" required>
+
+                <button type="submit" id="food-submit-button">Add Food</button>
+            </form>
+
+            <p id="food-message" class="message"></p>
+
+            <h3>Food Entries</h3>
+
+            <div id="food-entries-list">
+                <p>Loading food entries...</p>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="main.js"></script>
+</body>
+</html>
