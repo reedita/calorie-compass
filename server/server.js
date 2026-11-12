@@ -666,5 +666,203 @@ app.delete("/api/food-entries/:entryId", authenticateToken, async (req, res) => 
         res.status(500).json({ message: "Could not delete food entry." });
     }
 });
+// --------------------------------------------------
+// ACTIVITY & WEIGHT TABLES + ROUTES (NAILA)
+// --------------------------------------------------
+
+async function initActivityAndWeightTables() {
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS activity_entries (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                activity_name VARCHAR(120) NOT NULL,
+                duration_minutes INT NOT NULL,
+                calories_burned DECIMAL(8, 2) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS weight_entries (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                weight_kg DECIMAL(5, 2) NOT NULL,
+                note VARCHAR(150) DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+    } catch (error) {
+        console.error("Could not initialize activity/weight tables:", error.message);
+    }
+}
+
+initActivityAndWeightTables();
+
+// Retrieve logged activities
+app.get("/api/activities", async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            "SELECT * FROM activity_entries ORDER BY created_at DESC"
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error("Retrieve activities error:", error);
+        res.status(500).json({ message: "Could not load activities." });
+    }
+});
+
+// Save a new activity
+app.post("/api/activities", async (req, res) => {
+    try {
+        const { activityName, durationMinutes, caloriesBurned } = req.body;
+
+        if (
+            typeof activityName !== "string" ||
+            activityName.trim() === "" ||
+            durationMinutes === undefined ||
+            caloriesBurned === undefined
+        ) {
+            return res.status(400).json({
+                message: "Activity name, duration, and calories burned are required."
+            });
+        }
+
+        const duration = Number(durationMinutes);
+        const calories = Number(caloriesBurned);
+
+        if (
+            !Number.isFinite(duration) ||
+            !Number.isFinite(calories) ||
+            duration <= 0 ||
+            duration > 1440 ||
+            calories <= 0 ||
+            calories > 10000
+        ) {
+            return res.status(400).json({
+                message: "Enter a valid duration and calorie estimate greater than zero."
+            });
+        }
+
+        const [result] = await db.execute(
+            `INSERT INTO activity_entries (activity_name, duration_minutes, calories_burned)
+             VALUES (?, ?, ?)`,
+            [activityName.trim().slice(0, 120), Math.round(duration), calories.toFixed(2)]
+        );
+
+        res.status(201).json({
+            message: "Activity logged successfully!",
+            activityId: result.insertId
+        });
+    } catch (error) {
+        console.error("Save activity error:", error);
+        res.status(500).json({ message: "Could not save activity." });
+    }
+});
+
+// Delete an activity
+app.delete("/api/activities/:id", async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({ message: "Invalid activity ID." });
+        }
+
+        const [result] = await db.execute(
+            "DELETE FROM activity_entries WHERE id = ?",
+            [id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Activity entry not found." });
+        }
+
+        res.json({ message: "Activity deleted successfully." });
+    } catch (error) {
+        console.error("Delete activity error:", error);
+        res.status(500).json({ message: "Failed to delete activity." });
+    }
+});
+
+// Retrieve weight history
+app.get("/api/weights", async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            "SELECT * FROM weight_entries ORDER BY created_at DESC"
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error("Retrieve weights error:", error);
+        res.status(500).json({ message: "Could not load weight history." });
+    }
+});
+
+// Log a new weight entry
+app.post("/api/weights", async (req, res) => {
+    try {
+        const { weightKg, note } = req.body;
+        const weight = Number(weightKg);
+
+        if (!Number.isFinite(weight) || weight < 20 || weight > 500) {
+            return res.status(400).json({
+                message: "Enter a valid weight between 20 kg and 500 kg."
+            });
+        }
+
+        const cleanNote = typeof note === "string" ? note.trim().slice(0, 150) : "";
+
+        const [result] = await db.execute(
+            `INSERT INTO weight_entries (weight_kg, note) VALUES (?, ?)`,
+            [weight.toFixed(2), cleanNote]
+        );
+
+        res.status(201).json({
+            message: "Weight logged successfully!",
+            weightId: result.insertId
+        });
+    } catch (error) {
+        console.error("Save weight error:", error);
+        res.status(500).json({ message: "Could not save weight entry." });
+    }
+});
+
+// Delete a weight entry
+app.delete("/api/weights/:id", async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({ message: "Invalid weight entry ID." });
+        }
+
+        const [result] = await db.execute(
+            "DELETE FROM weight_entries WHERE id = ?",
+            [id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Weight entry not found." });
+        }
+
+        res.json({ message: "Weight entry deleted successfully." });
+    } catch (error) {
+        console.error("Delete weight error:", error);
+        res.status(500).json({ message: "Failed to delete weight entry." });
+    }
+});
+// Global error handler
+
+app.use((error, req, res, next) => {
+    console.error("Server error:", error);
+
+    if (error instanceof multer.MulterError) {
+        if (error.code === "LIMIT_FILE_SIZE") {
+            return res.status(413).json({
+                message: "Image must be smaller than 5 MB."
+            });
+        }
+    }
+
+    res.status(error.status || 400).json({
+        message: error.message || "Something went wrong."
+    });
+});
 
 module.exports = { app, db };

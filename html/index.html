@@ -257,7 +257,141 @@
                 <div class="diary-loading"><span class="spinner small"></span> Loading your diary...</div>
             </div>
         </section>
+<!-- STEP 04: PHYSICAL ACTIVITY TRACKING -->
+    <section class="panel activity-panel" id="activityPanel" aria-labelledby="activityTitle">
+      <div class="section-heading">
+        <div>
+          <span class="step-label">STEP 04</span>
+          <h2 id="activityTitle">Activity tracking</h2>
+          <p>Log your workouts, estimate calories burned, and explore quick fitness ideas.</p>
+        </div>
+        <span class="heading-icon">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M13 4a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM6 21l3-6 3 2v4m-3-6 2-5 4 2 3-3M7 11l2-3 4 1"/></svg>
+        </span>
+      </div>
 
+      <div class="field-grid">
+        <label class="food-field" for="activitySelect">
+          <span>Choose an activity</span>
+          <select id="activitySelect">
+            <option value="Walking" data-rate="4.1">Walking (light pace)</option>
+            <option value="Brisk Walking" data-rate="5.3">Brisk Walking</option>
+            <option value="Running / Jogging" data-rate="10.0">Running / Jogging</option>
+            <option value="Cycling" data-rate="8.2">Cycling</option>
+            <option value="Swimming" data-rate="8.8">Swimming</option>
+            <option value="Jump Rope" data-rate="11.7">Jump Rope</option>
+            <option value="Yoga / Stretching" data-rate="3.3">Yoga / Stretching</option>
+            <option value="Strength Training" data-rate="5.8">Strength Training</option>
+            <option value="Badminton / Football" data-rate="8.2">Badminton / Football</option>
+            <option value="Custom" data-rate="5.5">Custom activity...</option>
+          </select>
+        </label>
+
+        <label class="food-field" for="activityDuration">
+          <span>Duration (minutes)</span>
+          <input type="number" id="activityDuration" min="1" max="1440" step="1" placeholder="e.g. 30">
+        </label>
+      </div>
+
+      <div id="customActivityWrap" hidden style="margin-top: 12px;">
+        <label class="food-field" for="customActivityInput">
+          <span>Custom activity name</span>
+          <input type="text" id="customActivityInput" maxlength="100" placeholder="e.g. Stair climbing, Dancing">
+        </label>
+      </div>
+
+      <div class="calorie-estimate" style="margin-top: 14px;">
+        <span>Estimated calories burned</span>
+        <strong id="activityCaloriePreview">0 kcal</strong>
+      </div>
+
+      <p class="message" id="activityMessage" role="status" aria-live="polite"></p>
+
+      <button type="button" class="button button-primary" id="saveActivityBtn" style="margin-top: 12px; width: 100%;">
+        <svg class="icon"><use href="#i-check"></use></svg>
+        Save activity
+      </button>
+
+      <div class="fitness-tips-box">
+        <strong>Exercise suggestions &amp; fitness tips</strong>
+        <p id="fitnessTipText" class="helper-text">Aim for at least 30 minutes of moderate movement most days, and stay hydrated before and after workouts.</p>
+        <div class="suggestion-list" id="activitySuggestions">
+          <button type="button" class="suggestion-chip activity-chip" data-activity="Brisk Walking" data-minutes="30">30 min Brisk Walk</button>
+          <button type="button" class="suggestion-chip activity-chip" data-activity="Running / Jogging" data-minutes="20">20 min Jog</button>
+          <button type="button" class="suggestion-chip activity-chip" data-activity="Cycling" data-minutes="30">30 min Cycling</button>
+          <button type="button" class="suggestion-chip activity-chip" data-activity="Yoga / Stretching" data-minutes="25">25 min Yoga</button>
+          <button type="button" class="suggestion-chip activity-chip" data-activity="Jump Rope" data-minutes="15">15 min Jump Rope</button>
+        </div>
+      </div>
+
+      <div class="subsection-header">
+        <h3>Logged activities</h3>
+        <span id="totalBurnedBadge" class="confidence-badge">Total burned: 0 kcal</span>
+      </div>
+      <div id="activityEntries" class="diary-list">
+        <div class="diary-empty">No activities logged yet. Add a workout above to get started.</div>
+      </div>
+    </section>
+
+    <!-- STEP 05: WEIGHT & PROGRESS TRACKING -->
+    <section class="panel weight-panel" id="weightPanel" aria-labelledby="weightTitle">
+      <div class="section-heading">
+        <div>
+          <span class="step-label">STEP 05</span>
+          <h2 id="weightTitle">Weight &amp; progress</h2>
+          <p>Record your weight over time and track your trend visually.</p>
+        </div>
+        <span class="heading-icon warm">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>
+        </span>
+      </div>
+
+      <div class="field-grid">
+        <label class="food-field" for="weightInput">
+          <span>Weight (kg)</span>
+          <input type="number" id="weightInput" min="20" max="500" step="0.1" placeholder="e.g. 64.5">
+        </label>
+
+        <label class="food-field" for="weightNoteInput">
+          <span>Note (optional)</span>
+          <input type="text" id="weightNoteInput" maxlength="150" placeholder="e.g. Morning check-in">
+        </label>
+      </div>
+
+      <p class="message" id="weightMessage" role="status" aria-live="polite"></p>
+
+      <button type="button" class="button button-primary" id="saveWeightBtn" style="margin-top: 12px; width: 100%;">
+        <svg class="icon"><use href="#i-check"></use></svg>
+        Log weight
+      </button>
+
+      <div class="progress-card" id="weightProgressCard">
+        <div class="progress-stats">
+          <div class="stat-pill">
+            <span>Starting</span>
+            <strong id="startWeightStat">—</strong>
+          </div>
+          <div class="stat-pill">
+            <span>Latest</span>
+            <strong id="latestWeightStat">—</strong>
+          </div>
+          <div class="stat-pill">
+            <span>Change</span>
+            <strong id="changeWeightStat">—</strong>
+          </div>
+        </div>
+        <div id="weightChartContainer" class="weight-chart-wrap">
+          <p class="helper-text" style="text-align: center; margin: 16px 0;">Log at least two weight entries to see your progress line.</p>
+        </div>
+      </div>
+
+      <div class="subsection-header">
+        <h3>Weight history</h3>
+      </div>
+      <div id="weightEntries" class="diary-list">
+        <div class="diary-empty">No weight entries yet. Log your first weight above.</div>
+      </div>
+    </section>
         <footer class="footer-note">
             <svg class="icon"><use href="#i-leaf"></use></svg>
             <span>Calorie estimates are approximate. Always review and adjust your entries.</span>
