@@ -962,3 +962,95 @@ button:focus-visible, input:focus-visible {
         padding-left: 11px;
     }
 }
+/* -------------------------------------------------- */
+/* ACTIVITY & WEIGHT TRACKING SECTIONS (NAILA)        */
+/* -------------------------------------------------- */
+
+.food-field select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #d8ded2;
+  border-radius: 12px;
+  background: #ffffff;
+  font: inherit;
+  color: inherit;
+}
+
+.food-field select:focus {
+  outline: none;
+  border-color: #2f6f4e;
+}
+
+.fitness-tips-box {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f4f7f1;
+  border: 1px solid #e1e8da;
+}
+
+.fitness-tips-box strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.subsection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+  margin-bottom: 12px;
+}
+
+.subsection-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.progress-card {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f8faf6;
+  border: 1px solid #e1e8da;
+}
+
+.progress-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.stat-pill {
+  background: #ffffff;
+  border: 1px solid #e4e9df;
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.stat-pill span {
+  display: block;
+  font-size: 0.78rem;
+  color: #5f6c61;
+}
+
+.stat-pill strong {
+  display: block;
+  font-size: 1.05rem;
+  margin-top: 2px;
+}
+
+.weight-chart-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.weight-chart-svg {
+  width: 100%;
+  height: 170px;
+  display: block;
+}

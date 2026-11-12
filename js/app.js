@@ -622,3 +622,368 @@ function showToast(message) {
 // Initial diary load
 renderRecognizedFoods();
 loadFoodEntries();
+// --------------------------------------------------
+// ACTIVITY TRACKING (NAILA)
+// --------------------------------------------------
+
+const activitySelect = document.getElementById("activitySelect");
+const activityDuration = document.getElementById("activityDuration");
+const customActivityWrap = document.getElementById("customActivityWrap");
+const customActivityInput = document.getElementById("customActivityInput");
+const activityCaloriePreview = document.getElementById("activityCaloriePreview");
+const activityMessage = document.getElementById("activityMessage");
+const saveActivityBtn = document.getElementById("saveActivityBtn");
+const activityEntries = document.getElementById("activityEntries");
+const totalBurnedBadge = document.getElementById("totalBurnedBadge");
+const fitnessTipText = document.getElementById("fitnessTipText");
+
+const FITNESS_TIPS = [
+    "Aim for at least 30 minutes of moderate movement most days, and stay hydrated before and after workouts.",
+    "Short 15-minute walks after meals help digestion and steady daily energy.",
+    "Combine light cardio like brisk walking or cycling with 2 days of bodyweight strength exercises each week.",
+    "Consistency beats intensity—regular 20-minute sessions build lasting habits faster than occasional hard workouts."
+];
+
+if (fitnessTipText) {
+    fitnessTipText.textContent = FITNESS_TIPS[new Date().getDate() % FITNESS_TIPS.length];
+}
+
+function getEstimatedBurnedCalories() {
+    const minutes = Number(activityDuration.value);
+    if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 1440) {
+        return 0;
+    }
+    const selectedOption = activitySelect.options[activitySelect.selectedIndex];
+    const rate = Number(selectedOption?.dataset.rate || 5.5);
+    return Math.round(minutes * rate);
+}
+
+function updateActivityPreview() {
+    const isCustom = activitySelect.value === "Custom";
+    customActivityWrap.hidden = !isCustom;
+    const burned = getEstimatedBurnedCalories();
+    activityCaloriePreview.textContent = `${burned} kcal`;
+}
+
+function showActivityMessage(text, type = "") {
+    activityMessage.textContent = text;
+    activityMessage.className = `message ${type}`.trim();
+}
+
+activitySelect.addEventListener("change", updateActivityPreview);
+activityDuration.addEventListener("input", updateActivityPreview);
+
+document.querySelectorAll(".activity-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+        activitySelect.value = chip.dataset.activity;
+        activityDuration.value = chip.dataset.minutes;
+        updateActivityPreview();
+        showActivityMessage("Suggestion selected. Click Save activity to log it.", "success");
+    });
+});
+
+saveActivityBtn.addEventListener("click", async () => {
+    const isCustom = activitySelect.value === "Custom";
+    const activityName = isCustom ? customActivityInput.value.trim() : activitySelect.value;
+    const durationMinutes = Number(activityDuration.value);
+    const caloriesBurned = getEstimatedBurnedCalories();
+
+    if (!activityName) {
+        showActivityMessage("Please enter a custom activity name.", "error");
+        customActivityInput.focus();
+        return;
+    }
+
+    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0 || durationMinutes > 1440) {
+        showActivityMessage("Please enter a valid duration in minutes (1 to 1440).", "error");
+        activityDuration.focus();
+        return;
+    }
+
+    saveActivityBtn.disabled = true;
+    showActivityMessage("");
+
+    try {
+        const response = await fetch("/api/activities", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ activityName, durationMinutes, caloriesBurned })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.message || "Could not save activity.");
+        }
+
+        activityDuration.value = "";
+        customActivityInput.value = "";
+        updateActivityPreview();
+        showToast("Activity logged ✓");
+        await loadActivities();
+    } catch (error) {
+        showActivityMessage(error.message || "Could not save activity.", "error");
+    } finally {
+        saveActivityBtn.disabled = false;
+    }
+});
+
+async function loadActivities() {
+    try {
+        const response = await fetch("/api/activities");
+        if (!response.ok) throw new Error("Failed to load activities.");
+
+        const items = await response.json();
+        activityEntries.innerHTML = "";
+
+        if (!Array.isArray(items) || items.length === 0) {
+            totalBurnedBadge.textContent = "Total burned: 0 kcal";
+            activityEntries.innerHTML = '<div class="diary-empty">No activities logged yet. Add a workout above to get started.</div>';
+            return;
+        }
+
+        const totalBurned = items.reduce((sum, item) => sum + Number(item.calories_burned || 0), 0);
+        totalBurnedBadge.textContent = `Total burned: ${Math.round(totalBurned)} kcal`;
+
+        items.forEach(item => {
+            const row = document.createElement("article");
+            row.className = "diary-entry";
+
+            const thumb = document.createElement("div");
+            thumb.className = "diary-thumb";
+            thumb.innerHTML = '<svg class="icon"><use href="#i-clock"></use></svg>';
+
+            const info = document.createElement("div");
+            info.className = "diary-info";
+
+            const title = document.createElement("strong");
+            title.textContent = item.activity_name;
+
+            const details = document.createElement("span");
+            details.textContent = `${item.duration_minutes} mins`;
+
+            const date = document.createElement("time");
+            const parsedDate = new Date(item.created_at);
+            date.textContent = Number.isNaN(parsedDate.getTime()) ? "" : parsedDate.toLocaleString();
+
+            info.append(title, details, date);
+
+            const calories = document.createElement("div");
+            calories.className = "diary-calories";
+
+            const calVal = document.createElement("strong");
+            calVal.textContent = Number(item.calories_burned).toFixed(0);
+
+            const calUnit = document.createElement("span");
+            calUnit.textContent = "kcal";
+
+            calories.append(calVal, calUnit);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "delete-button";
+            deleteBtn.title = "Delete activity";
+            deleteBtn.innerHTML = '<svg class="icon"><use href="#i-trash"></use></svg>';
+            deleteBtn.addEventListener("click", async () => {
+                if (!confirm(`Delete "${item.activity_name}"?`)) return;
+                deleteBtn.disabled = true;
+                try {
+                    const res = await fetch(`/api/activities/${encodeURIComponent(item.id)}`, { method: "DELETE" });
+                    if (!res.ok) throw new Error("Could not delete activity.");
+                    showToast("Activity deleted");
+                    await loadActivities();
+                } catch (err) {
+                    alert(err.message);
+                    deleteBtn.disabled = false;
+                }
+            });
+
+            row.append(thumb, info, calories, deleteBtn);
+            activityEntries.appendChild(row);
+        });
+    } catch (error) {
+        console.error("Load activities error:", error);
+    }
+}
+
+// --------------------------------------------------
+// WEIGHT & PROGRESS TRACKING (NAILA)
+// --------------------------------------------------
+
+const weightInput = document.getElementById("weightInput");
+const weightNoteInput = document.getElementById("weightNoteInput");
+const weightMessage = document.getElementById("weightMessage");
+const saveWeightBtn = document.getElementById("saveWeightBtn");
+const weightEntries = document.getElementById("weightEntries");
+const startWeightStat = document.getElementById("startWeightStat");
+const latestWeightStat = document.getElementById("latestWeightStat");
+const changeWeightStat = document.getElementById("changeWeightStat");
+const weightChartContainer = document.getElementById("weightChartContainer");
+
+function showWeightMessage(text, type = "") {
+    weightMessage.textContent = text;
+    weightMessage.className = `message ${type}`.trim();
+}
+
+saveWeightBtn.addEventListener("click", async () => {
+    const weightKg = Number(weightInput.value);
+    const note = weightNoteInput.value.trim();
+
+    if (!Number.isFinite(weightKg) || weightKg < 20 || weightKg > 500) {
+        showWeightMessage("Please enter a valid weight between 20 kg and 500 kg.", "error");
+        weightInput.focus();
+        return;
+    }
+
+    saveWeightBtn.disabled = true;
+    showWeightMessage("");
+
+    try {
+        const response = await fetch("/api/weights", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ weightKg, note })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.message || "Could not save weight.");
+        }
+
+        weightInput.value = "";
+        weightNoteInput.value = "";
+        showToast("Weight logged ✓");
+        await loadWeights();
+    } catch (error) {
+        showWeightMessage(error.message || "Could not save weight.", "error");
+    } finally {
+        saveWeightBtn.disabled = false;
+    }
+});
+
+function renderWeightChart(chronologicalItems) {
+    if (chronologicalItems.length < 2) {
+        weightChartContainer.innerHTML =
+            '<p class="helper-text" style="text-align: center; margin: 16px 0;">Log at least two weight entries to see your progress line.</p>';
+        return;
+    }
+
+    const width = 520;
+    const height = 160;
+    const padX = 36;
+    const padY = 26;
+
+    const weights = chronologicalItems.map(item => Number(item.weight_kg));
+    const minW = Math.min(...weights);
+    const maxW = Math.max(...weights);
+    const range = maxW - minW || 1;
+
+    const points = chronologicalItems.map((item, idx) => {
+        const x = padX + (idx / (chronologicalItems.length - 1)) * (width - padX * 2);
+        const y = height - padY - ((Number(item.weight_kg) - minW) / range) * (height - padY * 2);
+        return { x, y, weight: Number(item.weight_kg).toFixed(1) };
+    });
+
+    const polylinePoints = points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+    const circles = points
+        .map(
+            p => `
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#2f6f4e" />
+            <text x="${p.x.toFixed(1)}" y="${(p.y - 9).toFixed(1)}" text-anchor="middle" font-size="11" fill="#243127" font-weight="600">${p.weight} kg</text>
+        `
+        )
+        .join("");
+
+    weightChartContainer.innerHTML = `
+        <svg class="weight-chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Weight progress chart">
+            <polyline fill="none" stroke="#2f6f4e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${polylinePoints}" />
+            ${circles}
+        </svg>
+    `;
+}
+
+async function loadWeights() {
+    try {
+        const response = await fetch("/api/weights");
+        if (!response.ok) throw new Error("Failed to load weights.");
+
+        const items = await response.json();
+        weightEntries.innerHTML = "";
+
+        if (!Array.isArray(items) || items.length === 0) {
+            startWeightStat.textContent = "—";
+            latestWeightStat.textContent = "—";
+            changeWeightStat.textContent = "—";
+            renderWeightChart([]);
+            weightEntries.innerHTML = '<div class="diary-empty">No weight entries yet. Log your first weight above.</div>';
+            return;
+        }
+
+        const chronological = [...items].reverse();
+        const startWeight = Number(chronological[0].weight_kg);
+        const latestWeight = Number(chronological[chronological.length - 1].weight_kg);
+        const diff = latestWeight - startWeight;
+        const sign = diff > 0 ? "+" : "";
+
+        startWeightStat.textContent = `${startWeight.toFixed(1)} kg`;
+        latestWeightStat.textContent = `${latestWeight.toFixed(1)} kg`;
+        changeWeightStat.textContent = `${sign}${diff.toFixed(1)} kg`;
+
+        renderWeightChart(chronological);
+
+        items.forEach(item => {
+            const row = document.createElement("article");
+            row.className = "diary-entry";
+
+            const thumb = document.createElement("div");
+            thumb.className = "diary-thumb";
+            thumb.innerHTML = '<svg class="icon"><use href="#i-check"></use></svg>';
+
+            const info = document.createElement("div");
+            info.className = "diary-info";
+
+            const title = document.createElement("strong");
+            title.textContent = `${Number(item.weight_kg).toFixed(1)} kg`;
+
+            const note = document.createElement("span");
+            note.textContent = item.note || "Weight check-in";
+
+            const date = document.createElement("time");
+            const parsedDate = new Date(item.created_at);
+            date.textContent = Number.isNaN(parsedDate.getTime()) ? "" : parsedDate.toLocaleString();
+
+            info.append(title, note, date);
+
+            const badge = document.createElement("div");
+            badge.className = "diary-calories";
+            badge.innerHTML = `<strong>${Number(item.weight_kg).toFixed(1)}</strong><span>kg</span>`;
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "delete-button";
+            deleteBtn.title = "Delete weight entry";
+            deleteBtn.innerHTML = '<svg class="icon"><use href="#i-trash"></use></svg>';
+            deleteBtn.addEventListener("click", async () => {
+                if (!confirm(`Delete weight entry (${Number(item.weight_kg).toFixed(1)} kg)?`)) return;
+                deleteBtn.disabled = true;
+                try {
+                    const res = await fetch(`/api/weights/${encodeURIComponent(item.id)}`, { method: "DELETE" });
+                    if (!res.ok) throw new Error("Could not delete weight entry.");
+                    showToast("Weight entry deleted");
+                    await loadWeights();
+                } catch (err) {
+                    alert(err.message);
+                    deleteBtn.disabled = false;
+                }
+            });
+
+            row.append(thumb, info, badge, deleteBtn);
+            weightEntries.appendChild(row);
+        });
+    } catch (error) {
+        console.error("Load weights error:", error);
+    }
+}
+
+updateActivityPreview();
+loadActivities();
+loadWeights();
