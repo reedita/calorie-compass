@@ -3,165 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calorie Compass</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="theme-color" content="#f7f8f3">
+    <title>Calorie Compass | Your daily food companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+    <!-- Small inline icon library: no icon package or paid service required. -->
+    <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M20 4c-8 0-14 3-14 10a6 6 0 0 0 6 6c7 0 10-6 8-16Z"/><path d="M4 21c3-6 7-9 13-12"/></symbol>
+        <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14 4H9l-2 3H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-3-3Z"/><circle cx="12" cy="13" r="3"/></symbol>
+        <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 16v4h16v-4"/></symbol>
+        <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18m-2 0-1 14H6L5 6m4 0V4h6v2m-5 4v6m4-6v6"/></symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9A7 7 0 0 1 18 6l2 6M4 12l2 6a7 7 0 0 0 12.5-3"/></symbol>
+        <symbol id="i-utensils" viewBox="0 0 24 24"><path d="M7 2v8m-4-8v5a4 4 0 0 0 8 0V2M7 11v11m10-20v20m0-20c4 3 4 8 0 11"/></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    </svg>
 
-    <header>
-        <h1>Calorie Compass</h1>
-        <p>Your personal health and calorie tracker</p>
-    </header>
+    <main class="app-shell">
+        <header class="topbar">
+            <a class="brand" href="/" aria-label="Calorie Compass home">
+                <span class="brand-mark"><svg class="icon"><use href="#i-leaf"></use></svg></span>
+                <span>
+                    <span class="brand-name">Calorie Compass</span>
+                    <span class="brand-subtitle">Your daily food companion</span>
+                </span>
+            </a>
+            <span class="topbar-note">Eat well. Feel good.</span>
+        </header>
 
-    <main>
-        <section id="auth-section">
-
-            <div class="card">
-                <h2>Create Account</h2>
-
-                <form id="register-form">
-                    <input type="text" id="full_name" placeholder="Full Name" required>
-                    <input type="email" id="register-email" placeholder="Email Address" required>
-                    <input type="password" id="register-password" placeholder="Password (minimum 8 characters)" required minlength="8">
-                    <input type="number" id="age" placeholder="Age" min="1" max="120">
-                    <input type="number" id="height_cm" placeholder="Height (cm)" min="1" step="0.01">
-                    <input type="number" id="weight_kg" placeholder="Weight (kg)" min="1" step="0.01">
-
-                    <select id="activity_level">
-                        <option value="">Select Activity Level</option>
-                        <option value="sedentary">Sedentary</option>
-                        <option value="light">Lightly Active</option>
-                        <option value="moderate">Moderately Active</option>
-                        <option value="active">Very Active</option>
-                    </select>
-
-                    <select id="goal">
-                        <option value="">Select Your Goal</option>
-                        <option value="lose_weight">Lose Weight</option>
-                        <option value="maintain_weight">Maintain Weight</option>
-                        <option value="gain_weight">Gain Weight</option>
-                    </select>
-
-                    <button type="submit">Register</button>
-                </form>
-
-                <p id="register-message" class="message"></p>
-            </div>
-
-            <div class="card">
-                <h2>Login</h2>
-
-                <form id="login-form">
-                    <input type="email" id="login-email" placeholder="Email Address" required>
-                    <input type="password" id="login-password" placeholder="Password" required>
-                    <button type="submit">Login</button>
-                </form>
-
-                <p id="login-message" class="message"></p>
-            </div>
-
+        <section class="intro">
+            <p class="eyebrow">FOOD JOURNAL</p>
+            <h1>A little more mindful,<br><span>one meal at a time.</span></h1>
+            <p class="intro-copy">Take a photo of your meal, review the estimate, and add it to your diary.</p>
         </section>
 
-        <!-- User Profile -->
-        <section id="profile-section" class="card hidden">
-            <h2>My Profile</h2>
-
-            <form id="profile-form">
-                <label>Full Name</label>
-                <input type="text" id="profile-name" required>
-
-                <label>Age</label>
-                <input type="number" id="profile-age" min="1" max="120">
-
-                <label>Height (cm)</label>
-                <input type="number" id="profile-height" min="1" step="0.01">
-
-                <label>Weight (kg)</label>
-                <input type="number" id="profile-weight" min="1" step="0.01">
-
-                <label>Activity Level</label>
-                <select id="profile-activity">
-                    <option value="sedentary">Sedentary</option>
-                    <option value="light">Lightly Active</option>
-                    <option value="moderate">Moderately Active</option>
-                    <option value="active">Very Active</option>
-                </select>
-
-                <label>Goal</label>
-                <select id="profile-goal">
-                    <option value="lose_weight">Lose Weight</option>
-                    <option value="maintain_weight">Maintain Weight</option>
-                    <option value="gain_weight">Gain Weight</option>
-                </select>
-
-                <button type="submit">Update Profile</button>
-            </form>
-
-            <p id="profile-message" class="message"></p>
-
-            <!-- Navigation Button to Food Diary -->
-            <button type="button" id="goto-diary-btn" class="secondary-button" style="margin-top: 15px; width: 100%;">Go to Food Diary</button>
-            <button type="button" id="logout-button" class="logout-button" style="margin-top: 10px;">Logout</button>
-        </section>
-
-        <!-- Food Diary Dashboard -->
-        <section id="food-diary-section" class="card hidden">
-
-            <!-- Back to Profile Button -->
-            <button type="button" id="back-to-profile-btn" class="secondary-button" style="margin-bottom: 15px;">← Back to Profile</button>
-
-            <h2>My Food Diary</h2>
-            <p>Track your daily meals and calories.</p>
-
-            <div class="diary-summary">
-                <label for="diary-date">Select Date</label>
-                <input type="date" id="diary-date">
-
-                <h3>Daily Summary</h3>
-                <p>Total Food Entries: <strong id="total-entries">0</strong></p>
-                <p>Total Calories: <strong id="total-calories">0</strong> kcal</p>
+        <section class="panel capture-panel" aria-labelledby="captureTitle">
+            <div class="section-heading">
+                <div>
+                    <span class="step-label">STEP 01</span>
+                    <h2 id="captureTitle">Add your food</h2>
+                    <p>Start with a photo of what you're eating.</p>
+                </div>
+                <span class="heading-icon"><svg class="icon"><use href="#i-camera"></use></svg></span>
             </div>
 
-            <h3>Add Food Entry</h3>
+            <input type="file" id="foodImage" accept="image/jpeg,image/png,image/webp" hidden>
+            <input type="file" id="cameraImage" accept="image/jpeg,image/png,image/webp" capture="environment" hidden>
 
-            <form id="food-form">
+            <button type="button" class="drop-zone" id="dropZone" aria-label="Choose a food photo">
+                <span class="drop-icon"><svg class="icon"><use href="#i-image"></use></svg></span>
+                <strong id="dropTitle">Tap to upload or take a photo</strong>
+                <span id="dropSubtitle">JPG, PNG or WEBP · Up to 5 MB</span>
+                <span class="drop-hint">You can also drag and drop an image here</span>
+            </button>
 
-                <label for="food-name">Food Name</label>
-                <input type="text" id="food-name" placeholder="e.g. Rice" required>
-
-                <label for="meal-type">Meal Type</label>
-                <select id="meal-type" required>
-                    <option value="">Select Meal</option>
-                    <option value="Breakfast">Breakfast</option>
-                    <option value="Lunch">Lunch</option>
-                    <option value="Dinner">Dinner</option>
-                    <option value="Snack">Snack</option>
-                </select>
-
-                <label for="food-portion">Portion</label>
-                <input type="text" id="food-portion" placeholder="e.g. 1 cup">
-
-                <label for="food-calories">Calories (kcal)</label>
-                <input type="number" id="food-calories" min="1" step="0.01" placeholder="e.g. 250" required>
-
-                <label for="food-date">Entry Date</label>
-                <input type="date" id="food-date" required>
-
-                <button type="submit" id="food-submit-button">Add Food</button>
-            </form>
-
-            <p id="food-message" class="message"></p>
-
-            <h3>Food Entries</h3>
-
-            <div id="food-entries-list">
-                <p>Loading food entries...</p>
+            <div class="photo-actions">
+                <button type="button" class="button button-secondary" id="cameraBtn">
+                    <svg class="icon"><use href="#i-camera"></use></svg> Take photo
+                </button>
+                <button type="button" class="button button-secondary" id="uploadBtn">
+                    <svg class="icon"><use href="#i-upload"></use></svg> Upload photo
+                </button>
             </div>
 
+            <div class="preview-wrap" id="previewWrap" hidden>
+                <img id="preview" alt="Selected food preview">
+                <button type="button" class="remove-photo" id="removePhotoBtn" aria-label="Remove selected photo">×</button>
+                <span class="preview-caption">Photo ready for recognition</span>
+            </div>
+
+            <button type="button" class="button button-primary identify-button" id="recognizeBtn">
+                <svg class="icon"><use href="#i-search"></use></svg>
+                <span>Identify food</span>
+            </button>
+
+            <div class="loading-state" id="loadingState" hidden>
+                <span class="spinner" aria-hidden="true"></span>
+                <span><strong>Looking at your meal...</strong><small>This may take a few seconds.</small></span>
+            </div>
+            <p class="message" id="recognitionMessage" role="status" aria-live="polite"></p>
         </section>
 
+        <section class="panel results-panel" id="resultsPanel" aria-labelledby="resultsTitle">
+            <div class="section-heading">
+                <div>
+                    <span class="step-label">STEP 02</span>
+                    <h2 id="resultsTitle">Review your food</h2>
+                    <p>AI estimates are a starting point. Adjust them to match your meal.</p>
+                </div>
+                <span class="heading-icon warm"><svg class="icon"><use href="#i-utensils"></use></svg></span>
+            </div>
+
+            <div id="emptyResults" class="empty-state">
+                <span class="empty-illustration"><svg class="icon"><use href="#i-image"></use></svg></span>
+                <strong>Your food results will appear here</strong>
+                <span>Choose a photo and identify your food to get started.</span>
+            </div>
+            <div id="recognitionResults" class="results-list"></div>
+
+            <div class="fallback-panel" id="fallbackPanel" hidden>
+                <div class="fallback-heading">
+                    <span class="fallback-mark">?</span>
+                    <div><strong>Not sure about this one</strong><p>You can enter the food name yourself. Please verify its nutrition values.</p></div>
+                </div>
+                <label for="manualFoodSearch">Search or enter a food name</label>
+                <div class="search-field">
+                    <svg class="icon"><use href="#i-search"></use></svg>
+                    <input type="search" id="manualFoodSearch" placeholder="e.g. steamed rice, dal, chicken curry">
+                </div>
+                <div class="suggestion-list" id="foodSuggestions">
+                    <button type="button" class="suggestion-chip" data-food="Steamed rice">Steamed rice</button>
+                    <button type="button" class="suggestion-chip" data-food="Polao">Polao</button>
+                    <button type="button" class="suggestion-chip" data-food="Dal">Dal</button>
+                    <button type="button" class="suggestion-chip" data-food="Roti">Roti</button>
+                    <button type="button" class="suggestion-chip" data-food="Chicken curry">Chicken curry</button>
+                    <button type="button" class="suggestion-chip" data-food="Vegetable bhaji">Vegetable bhaji</button>
+                </div>
+                <button type="button" class="button button-outline" id="addManualFoodBtn">Add this food manually</button>
+                <p class="helper-text">Manual entries need a portion in grams and a calorie estimate per 100 g before saving.</p>
+            </div>
+        </section>
+
+        <section class="panel diary-panel" aria-labelledby="diaryTitle">
+            <div class="section-heading diary-heading">
+                <div>
+                    <span class="step-label">STEP 03</span>
+                    <h2 id="diaryTitle">Food diary</h2>
+                    <p>Your saved meals, all in one place.</p>
+                </div>
+                <button type="button" class="icon-button" id="refreshBtn" aria-label="Refresh food diary" title="Refresh entries">
+                    <svg class="icon"><use href="#i-refresh"></use></svg>
+                </button>
+            </div>
+            <div id="foodEntries" class="diary-list">
+                <div class="diary-loading"><span class="spinner small"></span> Loading your diary...</div>
+            </div>
+        </section>
+
+        <footer class="footer-note">
+            <svg class="icon"><use href="#i-leaf"></use></svg>
+            <span>Calorie estimates are approximate. Always review and adjust your entries.</span>
+        </footer>
     </main>
 
-    <script src="main.js"></script>
+    <div class="save-dock" id="saveDock" hidden>
+        <div class="dock-total"><span>Total estimate</span><strong><span id="totalCalories">0</span> <small>kcal</small></strong></div>
+        <button type="button" class="button button-primary save-button" id="saveBtn">
+            <svg class="icon"><use href="#i-check"></use></svg>
+            Save to diary
+        </button>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite">
+        <span class="toast-check"><svg class="icon"><use href="#i-check"></use></svg></span>
+        <span id="toastMessage">Added to your diary</span>
+    </div>
+
+    <script src="/js/app.js"></script>
 </body>
 </html>
