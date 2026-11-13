@@ -962,3 +962,52 @@ button:focus-visible, input:focus-visible {
         padding-left: 11px;
     }
 }
+
+/* ACCOUNT + PROFILE */
+.account-panel {
+    margin-top: 20px;
+}
+
+.account-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+}
+
+.account-grid form,
+#profile-form {
+    display: grid;
+    gap: 8px;
+}
+
+.account-grid h3 {
+    margin: 0;
+    color: var(--green-900);
+    font: 600 16px "Poppins", sans-serif;
+}
+
+.account-panel input,
+.account-panel select {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid #e0e8de;
+    border-radius: 10px;
+    background: white;
+    color: var(--ink);
+    font-size: 13px;
+}
+
+.account-panel form > .button {
+    margin-top: 12px;
+}
+
+.account-panel .message {
+    margin-bottom: 4px;
+}
+
+@media (max-width: 600px) {
+    .account-grid {
+        grid-template-columns: 1fr;
+    }
+}

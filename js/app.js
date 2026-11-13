@@ -1,3 +1,198 @@
+
+const authSection = document.getElementById("auth-section");
+const profileSection = document.getElementById("profile-section");
+
+const registerForm = document.getElementById("register-form");
+const loginForm = document.getElementById("login-form");
+const profileForm = document.getElementById("profile-form");
+
+const registerMessage = document.getElementById("register-message");
+const loginMessage = document.getElementById("login-message");
+const profileMessage = document.getElementById("profile-message");
+
+const logoutButton = document.getElementById("logout-button");
+
+const TOKEN_KEY = "calorieCompassToken";
+
+function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+}
+
+function authHeaders() {
+    return {
+        Authorization: `Bearer ${getToken()}`
+    };
+}
+
+function showAuthMessage(element, message, type = "error") {
+    element.textContent = message;
+    element.className = `message ${type}`;
+}
+
+function setLoggedInUI(loggedIn) {
+    authSection.hidden = loggedIn;
+    profileSection.hidden = !loggedIn;
+
+    document.querySelector(".intro").hidden = !loggedIn;
+    document.querySelector(".capture-panel").hidden = !loggedIn;
+    document.querySelector(".results-panel").hidden = !loggedIn;
+    document.querySelector(".diary-panel").hidden = !loggedIn;
+    document.querySelector(".footer-note").hidden = !loggedIn;
+
+    if (!loggedIn) saveDock.hidden = true;
+}
+
+async function loadProfile() {
+    const response = await fetch("/api/profile", {
+        headers: authHeaders()
+    });
+
+    if (!response.ok) {
+        throw new Error("Session expired. Please log in again.");
+    }
+
+    const result = await response.json();
+    const user = result.user || result;
+
+    document.getElementById("profile-name").value = user.full_name || "";
+    document.getElementById("profile-age").value = user.age || "";
+    document.getElementById("profile-height").value = user.height_cm || "";
+    document.getElementById("profile-weight").value = user.weight_kg || "";
+    document.getElementById("profile-activity").value = user.activity_level || "sedentary";
+    document.getElementById("profile-goal").value = user.goal || "maintain";
+
+    document.getElementById("profile-name-heading").textContent =
+        `Hello, ${user.full_name || "User"}!`;
+
+    setLoggedInUI(true);
+    await loadFoodEntries();
+}
+
+// REGISTER
+registerForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    showAuthMessage(registerMessage, "Creating account...", "success");
+
+    const payload = {
+        full_name: document.getElementById("full_name").value.trim(),
+        email: document.getElementById("register-email").value.trim(),
+        password: document.getElementById("register-password").value,
+        age: Number(document.getElementById("age").value),
+        height_cm: Number(document.getElementById("height_cm").value),
+        weight_kg: Number(document.getElementById("weight_kg").value),
+        activity_level: document.getElementById("activity_level").value,
+        goal: document.getElementById("goal").value
+    };
+
+    try {
+        const response = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Registration failed.");
+        }
+
+        showAuthMessage(registerMessage, "Account created! Please log in.", "success");
+        loginForm.querySelector("#login-email").value = payload.email;
+    } catch (error) {
+        showAuthMessage(registerMessage, error.message);
+    }
+});
+
+// LOGIN
+loginForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    showAuthMessage(loginMessage, "Signing in...", "success");
+
+    try {
+        const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: document.getElementById("login-email").value.trim(),
+                password: document.getElementById("login-password").value
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Login failed.");
+        }
+
+        localStorage.setItem(TOKEN_KEY, result.token);
+        await loadProfile();
+    } catch (error) {
+        showAuthMessage(loginMessage, error.message);
+    }
+});
+
+// UPDATE PROFILE
+profileForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const payload = {
+        full_name: document.getElementById("profile-name").value.trim(),
+        age: Number(document.getElementById("profile-age").value),
+        height_cm: Number(document.getElementById("profile-height").value),
+        weight_kg: Number(document.getElementById("profile-weight").value),
+        activity_level: document.getElementById("profile-activity").value,
+        goal: document.getElementById("profile-goal").value
+    };
+
+    try {
+        const response = await fetch("/api/profile", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                ...authHeaders()
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Profile update failed.");
+        }
+
+        showAuthMessage(profileMessage, "Profile updated successfully!", "success");
+        document.getElementById("profile-name-heading").textContent =
+            `Hello, ${payload.full_name}!`;
+    } catch (error) {
+        showAuthMessage(profileMessage, error.message);
+    }
+});
+
+// LOGOUT
+logoutButton.addEventListener("click", () => {
+    localStorage.removeItem(TOKEN_KEY);
+    setLoggedInUI(false);
+    showAuthMessage(loginMessage, "You have logged out.", "success");
+});
+
+// INITIAL SESSION
+document.addEventListener("DOMContentLoaded", async () => {
+    if (!getToken()) {
+        setLoggedInUI(false);
+        return;
+    }
+
+    try {
+        await loadProfile();
+    } catch (error) {
+        localStorage.removeItem(TOKEN_KEY);
+        setLoggedInUI(false);
+    }
+});
+
 const foodImage = document.getElementById("foodImage");
 const cameraImage = document.getElementById("cameraImage");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -145,6 +340,7 @@ async function recognizeFood() {
     try {
         const response = await fetch("/api/recognize-food", {
             method: "POST",
+            headers: authHeaders(),
             body: formData
         });
 
@@ -445,32 +641,28 @@ async function saveRecognizedFood(item) {
         throw new Error(`Please check the name, portion, and calories for ${item.name || "this food"}.`);
     }
 
-    const formData = new FormData();
-    formData.append("foodName", item.name.trim());
-    formData.append("portionGrams", Number(item.grams));
-    formData.append("calories", calories.toFixed(2));
-
-    if (selectedImage) {
-        formData.append("foodImage", selectedImage);
-    }
-
+    
     const response = await fetch("/api/food-entries", {
         method: "POST",
-        body: formData
+        headers: {
+            "Content-Type": "application/json",
+            ...authHeaders()
+        },
+        body: JSON.stringify({
+            food_name: item.name.trim(),
+            portion: Number(item.grams),
+            calories: Number(calories.toFixed(2)),
+            meal_type: "Unspecified",
+            entry_date: new Date().toISOString().slice(0, 10)
+        })
     });
 
-    const responseText = await response.text();
-    let result = {};
-
-    try {
-        result = responseText ? JSON.parse(responseText) : {};
-    } catch {
-        throw new Error("The server returned an invalid response while saving.");
-    }
+    const result = await response.json();
 
     if (!response.ok) {
         throw new Error(result.message || `Could not save ${item.name}.`);
     }
+
 }
 
 // --------------------------------------------------
@@ -481,7 +673,10 @@ async function loadFoodEntries() {
     foodEntries.innerHTML = '<div class="diary-loading"><span class="spinner small"></span> Loading your diary...</div>';
 
     try {
-        const response = await fetch("/api/food-entries");
+        const response = await fetch("/api/food-entries", {
+            headers: authHeaders()
+        });
+
 
         if (!response.ok) {
             throw new Error("Failed to retrieve food entries.");
@@ -577,9 +772,12 @@ async function loadFoodEntries() {
 }
 
 async function deleteFoodEntry(id) {
+    
     const response = await fetch(`/api/food-entries/${encodeURIComponent(id)}`, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: authHeaders()
     });
+
 
     const responseText = await response.text();
     let result = {};
@@ -619,6 +817,5 @@ function showToast(message) {
     }, 2800);
 }
 
-// Initial diary load
+// Initial UI setup
 renderRecognizedFoods();
-loadFoodEntries();

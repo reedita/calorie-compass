@@ -36,6 +36,118 @@
             </a>
             <span class="topbar-note">Eat well. Feel good.</span>
         </header>
+        
+        <!-- AUTHENTICATION -->
+        <section class="panel account-panel" id="auth-section">
+            <div class="section-heading">
+                <div>
+                    <span class="step-label">YOUR ACCOUNT</span>
+                    <h2>Welcome to Calorie Compass</h2>
+                    <p>Register or sign in to manage your food diary.</p>
+                </div>
+            </div>
+
+            <div class="account-grid">
+                <form id="register-form">
+                    <h3>Create account</h3>
+                    <label class="food-field">Full name
+                        <input id="full_name" name="full_name" required maxlength="100">
+                    </label>
+                    <label class="food-field">Email
+                        <input id="register-email" type="email" required>
+                    </label>
+                    <label class="food-field">Password
+                        <input id="register-password" type="password" minlength="8" required>
+                    </label>
+                    <label class="food-field">Age
+                        <input id="age" type="number" min="13" max="120" required>
+                    </label>
+                    <label class="food-field">Height (cm)
+                        <input id="height_cm" type="number" min="50" max="250" step="0.1" required>
+                    </label>
+                    <label class="food-field">Weight (kg)
+                        <input id="weight_kg" type="number" min="20" max="500" step="0.1" required>
+                    </label>
+                    <label class="food-field">Activity level
+                        <select id="activity_level" required>
+                            <option value="">Select</option>
+                            <option value="sedentary">Sedentary</option>
+                            <option value="light">Lightly active</option>
+                            <option value="moderate">Moderately active</option>
+                            <option value="active">Very active</option>
+                        </select>
+                    </label>
+                    <label class="food-field">Goal
+                        <select id="goal" required>
+                            <option value="">Select</option>
+                            <option value="lose">Lose weight</option>
+                            <option value="maintain">Maintain weight</option>
+                            <option value="gain">Gain weight</option>
+                        </select>
+                    </label>
+                    <button class="button button-primary" type="submit">Register</button>
+                    <p class="message" id="register-message"></p>
+                </form>
+
+                <form id="login-form">
+                    <h3>Sign in</h3>
+                    <label class="food-field">Email
+                        <input id="login-email" type="email" required>
+                    </label>
+                    <label class="food-field">Password
+                        <input id="login-password" type="password" required>
+                    </label>
+                    <button class="button button-primary" type="submit">Login</button>
+                    <p class="message" id="login-message"></p>
+                </form>
+            </div>
+        </section>
+
+        <!-- USER PROFILE -->
+        <section class="panel account-panel" id="profile-section" hidden>
+            <div class="section-heading">
+                <div>
+                    <span class="step-label">YOUR ACCOUNT</span>
+                    <h2 id="profile-name-heading">My Profile</h2>
+                    <p>Manage your personal information.</p>
+                </div>
+                <button type="button" class="button button-secondary" id="logout-button">
+                    Logout
+                </button>
+            </div>
+
+            <form id="profile-form">
+                <label class="food-field">Full name
+                    <input id="profile-name" required maxlength="100">
+                </label>
+                <label class="food-field">Age
+                    <input id="profile-age" type="number" min="13" max="120" required>
+                </label>
+                <label class="food-field">Height (cm)
+                    <input id="profile-height" type="number" min="50" max="250" step="0.1" required>
+                </label>
+                <label class="food-field">Weight (kg)
+                    <input id="profile-weight" type="number" min="20" max="500" step="0.1" required>
+                </label>
+                <label class="food-field">Activity level
+                    <select id="profile-activity" required>
+                        <option value="sedentary">Sedentary</option>
+                        <option value="light">Lightly active</option>
+                        <option value="moderate">Moderately active</option>
+                        <option value="active">Very active</option>
+                    </select>
+                </label>
+                <label class="food-field">Goal
+                    <select id="profile-goal" required>
+                        <option value="lose">Lose weight</option>
+                        <option value="maintain">Maintain weight</option>
+                        <option value="gain">Gain weight</option>
+                    </select>
+                </label>
+                <button class="button button-primary" type="submit">Update profile</button>
+                <p class="message" id="profile-message"></p>
+            </form>
+        </section>
 
         <section class="intro">
             <p class="eyebrow">FOOD JOURNAL</p>
