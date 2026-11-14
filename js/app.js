@@ -1,3 +1,200 @@
+
+const authSection = document.getElementById("auth-section");
+const profileSection = document.getElementById("profile-section");
+
+const registerForm = document.getElementById("register-form");
+const loginForm = document.getElementById("login-form");
+const profileForm = document.getElementById("profile-form");
+
+const registerMessage = document.getElementById("register-message");
+const loginMessage = document.getElementById("login-message");
+const profileMessage = document.getElementById("profile-message");
+
+const logoutButton = document.getElementById("logout-button");
+
+const TOKEN_KEY = "calorieCompassToken";
+
+function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+}
+
+function authHeaders() {
+    return {
+        Authorization: `Bearer ${getToken()}`
+    };
+}
+
+function showAuthMessage(element, message, type = "error") {
+    element.textContent = message;
+    element.className = `message ${type}`;
+}
+
+function setLoggedInUI(loggedIn) {
+    authSection.hidden = loggedIn;
+    profileSection.hidden = !loggedIn;
+
+    document.querySelector(".intro").hidden = !loggedIn;
+    document.querySelector(".capture-panel").hidden = !loggedIn;
+    document.querySelector(".results-panel").hidden = !loggedIn;
+    document.querySelector(".diary-panel").hidden = !loggedIn;
+    document.querySelector(".activity-panel").hidden = !loggedIn;
+    document.querySelector(".weight-panel").hidden = !loggedIn;
+    document.querySelector(".footer-note").hidden = !loggedIn;
+
+    if (!loggedIn) saveDock.hidden = true;
+}
+
+async function loadProfile() {
+    const response = await fetch("/api/profile", {
+        headers: authHeaders()
+    });
+
+    if (!response.ok) {
+        throw new Error("Session expired. Please log in again.");
+    }
+
+    const result = await response.json();
+    const user = result.user || result;
+
+    document.getElementById("profile-name").value = user.full_name || "";
+    document.getElementById("profile-age").value = user.age || "";
+    document.getElementById("profile-height").value = user.height_cm || "";
+    document.getElementById("profile-weight").value = user.weight_kg || "";
+    document.getElementById("profile-activity").value = user.activity_level || "sedentary";
+    document.getElementById("profile-goal").value = user.goal || "maintain";
+
+    document.getElementById("profile-name-heading").textContent =
+        `Hello, ${user.full_name || "User"}!`;
+
+    setLoggedInUI(true);
+    await Promise.all([loadFoodEntries(), loadActivities(), loadWeights()]);
+}
+
+// REGISTER
+registerForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    showAuthMessage(registerMessage, "Creating account...", "success");
+
+    const payload = {
+        full_name: document.getElementById("full_name").value.trim(),
+        email: document.getElementById("register-email").value.trim(),
+        password: document.getElementById("register-password").value,
+        age: Number(document.getElementById("age").value),
+        height_cm: Number(document.getElementById("height_cm").value),
+        weight_kg: Number(document.getElementById("weight_kg").value),
+        activity_level: document.getElementById("activity_level").value,
+        goal: document.getElementById("goal").value
+    };
+
+    try {
+        const response = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Registration failed.");
+        }
+
+        showAuthMessage(registerMessage, "Account created! Please log in.", "success");
+        loginForm.querySelector("#login-email").value = payload.email;
+    } catch (error) {
+        showAuthMessage(registerMessage, error.message);
+    }
+});
+
+// LOGIN
+loginForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    showAuthMessage(loginMessage, "Signing in...", "success");
+
+    try {
+        const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email: document.getElementById("login-email").value.trim(),
+                password: document.getElementById("login-password").value
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Login failed.");
+        }
+
+        localStorage.setItem(TOKEN_KEY, result.token);
+        await loadProfile();
+    } catch (error) {
+        showAuthMessage(loginMessage, error.message);
+    }
+});
+
+// UPDATE PROFILE
+profileForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const payload = {
+        full_name: document.getElementById("profile-name").value.trim(),
+        age: Number(document.getElementById("profile-age").value),
+        height_cm: Number(document.getElementById("profile-height").value),
+        weight_kg: Number(document.getElementById("profile-weight").value),
+        activity_level: document.getElementById("profile-activity").value,
+        goal: document.getElementById("profile-goal").value
+    };
+
+    try {
+        const response = await fetch("/api/profile", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                ...authHeaders()
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || "Profile update failed.");
+        }
+
+        showAuthMessage(profileMessage, "Profile updated successfully!", "success");
+        document.getElementById("profile-name-heading").textContent =
+            `Hello, ${payload.full_name}!`;
+    } catch (error) {
+        showAuthMessage(profileMessage, error.message);
+    }
+});
+
+// LOGOUT
+logoutButton.addEventListener("click", () => {
+    localStorage.removeItem(TOKEN_KEY);
+    setLoggedInUI(false);
+    showAuthMessage(loginMessage, "You have logged out.", "success");
+});
+
+// INITIAL SESSION
+document.addEventListener("DOMContentLoaded", async () => {
+    if (!getToken()) {
+        setLoggedInUI(false);
+        return;
+    }
+
+    try {
+        await loadProfile();
+    } catch (error) {
+        localStorage.removeItem(TOKEN_KEY);
+        setLoggedInUI(false);
+    }
+});
+
 const foodImage = document.getElementById("foodImage");
 const cameraImage = document.getElementById("cameraImage");
 const uploadBtn = document.getElementById("uploadBtn");
@@ -145,6 +342,7 @@ async function recognizeFood() {
     try {
         const response = await fetch("/api/recognize-food", {
             method: "POST",
+            headers: authHeaders(),
             body: formData
         });
 
@@ -445,32 +643,28 @@ async function saveRecognizedFood(item) {
         throw new Error(`Please check the name, portion, and calories for ${item.name || "this food"}.`);
     }
 
-    const formData = new FormData();
-    formData.append("foodName", item.name.trim());
-    formData.append("portionGrams", Number(item.grams));
-    formData.append("calories", calories.toFixed(2));
-
-    if (selectedImage) {
-        formData.append("foodImage", selectedImage);
-    }
-
+    
     const response = await fetch("/api/food-entries", {
         method: "POST",
-        body: formData
+        headers: {
+            "Content-Type": "application/json",
+            ...authHeaders()
+        },
+        body: JSON.stringify({
+            food_name: item.name.trim(),
+            portion: Number(item.grams),
+            calories: Number(calories.toFixed(2)),
+            meal_type: "Unspecified",
+            entry_date: new Date().toISOString().slice(0, 10)
+        })
     });
 
-    const responseText = await response.text();
-    let result = {};
-
-    try {
-        result = responseText ? JSON.parse(responseText) : {};
-    } catch {
-        throw new Error("The server returned an invalid response while saving.");
-    }
+    const result = await response.json();
 
     if (!response.ok) {
         throw new Error(result.message || `Could not save ${item.name}.`);
     }
+
 }
 
 // --------------------------------------------------
@@ -481,7 +675,10 @@ async function loadFoodEntries() {
     foodEntries.innerHTML = '<div class="diary-loading"><span class="spinner small"></span> Loading your diary...</div>';
 
     try {
-        const response = await fetch("/api/food-entries");
+        const response = await fetch("/api/food-entries", {
+            headers: authHeaders()
+        });
+
 
         if (!response.ok) {
             throw new Error("Failed to retrieve food entries.");
@@ -577,9 +774,12 @@ async function loadFoodEntries() {
 }
 
 async function deleteFoodEntry(id) {
+    
     const response = await fetch(`/api/food-entries/${encodeURIComponent(id)}`, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: authHeaders()
     });
+
 
     const responseText = await response.text();
     let result = {};
@@ -622,436 +822,366 @@ function showToast(message) {
 // Initial diary load
 renderRecognizedFoods();
 loadFoodEntries();
+// --------------------------------------------------
+// ACTIVITY TRACKING (NAILA)
+// --------------------------------------------------
 
+const activitySelect = document.getElementById("activitySelect");
+const activityDuration = document.getElementById("activityDuration");
+const customActivityWrap = document.getElementById("customActivityWrap");
+const customActivityInput = document.getElementById("customActivityInput");
+const activityCaloriePreview = document.getElementById("activityCaloriePreview");
+const activityMessage = document.getElementById("activityMessage");
+const saveActivityBtn = document.getElementById("saveActivityBtn");
+const activityEntries = document.getElementById("activityEntries");
+const totalBurnedBadge = document.getElementById("totalBurnedBadge");
+const fitnessTipText = document.getElementById("fitnessTipText");
 
-const API_URL = "http://localhost:3000";
+const FITNESS_TIPS = [
+    "Aim for at least 30 minutes of moderate movement most days, and stay hydrated before and after workouts.",
+    "Short 15-minute walks after meals help digestion and steady daily energy.",
+    "Combine light cardio like brisk walking or cycling with 2 days of bodyweight strength exercises each week.",
+    "Consistency beats intensity—regular 20-minute sessions build lasting habits faster than occasional hard workouts."
+];
 
-// Get today's date in local timezone
-function getTodayDate() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+if (fitnessTipText) {
+    fitnessTipText.textContent = FITNESS_TIPS[new Date().getDate() % FITNESS_TIPS.length];
 }
 
-
-// Registration
-document.getElementById("register-form").addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    const message = document.getElementById("register-message");
-
-    const userData = {
-        full_name: document.getElementById("full_name").value,
-        email: document.getElementById("register-email").value,
-        password: document.getElementById("register-password").value,
-        age: document.getElementById("age").value || null,
-        height_cm: document.getElementById("height_cm").value || null,
-        weight_kg: document.getElementById("weight_kg").value || null,
-        activity_level: document.getElementById("activity_level").value || null,
-        goal: document.getElementById("goal").value || null
-    };
-
-    try {
-        const response = await fetch(`${API_URL}/api/auth/register`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(userData)
-        });
-
-        const result = await response.json();
-
-        message.textContent = result.message;
-        message.style.color = response.ok ? "green" : "red";
-
-        if (response.ok) {
-            document.getElementById("register-form").reset();
-        }
-
-    } catch (error) {
-        message.textContent = "Could not connect to server.";
-        message.style.color = "red";
+function getEstimatedBurnedCalories() {
+    const minutes = Number(activityDuration.value);
+    if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 1440) {
+        return 0;
     }
-});
-
-
-// Login
-document.getElementById("login-form").addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    const message = document.getElementById("login-message");
-
-    const loginData = {
-        email: document.getElementById("login-email").value,
-        password: document.getElementById("login-password").value
-    };
-
-    try {
-        const response = await fetch(`${API_URL}/api/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(loginData)
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            localStorage.setItem("token", result.token);
-            message.textContent = result.message;
-            message.style.color = "green";
-
-            document.getElementById("login-form").reset();
-
-            await loadProfile();
-        } else {
-            message.textContent = result.message;
-            message.style.color = "red";
-        }
-
-    } catch (error) {
-        message.textContent = "Could not connect to server.";
-        message.style.color = "red";
-    }
-});
-
-
-// Load Profile & Show Only Profile Section initially after login
-async function loadProfile() {
-    const token = localStorage.getItem("token");
-
-    if (!token) return;
-
-    try {
-        const response = await fetch(`${API_URL}/api/profile`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            localStorage.removeItem("token");
-            alert(result.message);
-            return;
-        }
-
-        document.getElementById("profile-name").value = result.full_name || "";
-        document.getElementById("profile-age").value = result.age || "";
-        document.getElementById("profile-height").value = result.height_cm || "";
-        document.getElementById("profile-weight").value = result.weight_kg || "";
-        document.getElementById("profile-activity").value = result.activity_level || "moderate";
-        document.getElementById("profile-goal").value = result.goal || "maintain_weight";
-
-        // Hide Auth & Food Diary using hidden class, and show ONLY Profile
-        document.getElementById("auth-section").classList.add("hidden");
-        document.getElementById("food-diary-section").classList.add("hidden");
-        document.getElementById("profile-section").classList.remove("hidden");
-
-        // Load Food Diary data in background
-        document.getElementById("diary-date").value = getTodayDate();
-        document.getElementById("food-date").value = getTodayDate();
-
-        await loadFoodDiary();
-
-    } catch (error) {
-        alert("Could not load profile.");
-    }
+    const selectedOption = activitySelect.options[activitySelect.selectedIndex];
+    const rate = Number(selectedOption?.dataset.rate || 5.5);
+    return Math.round(minutes * rate);
 }
 
-
-// Toggle between Profile and Food Diary via Buttons
-document.addEventListener("click", function (event) {
-    if (event.target && event.target.id === "goto-diary-btn") {
-        document.getElementById("profile-section").classList.add("hidden");
-        document.getElementById("food-diary-section").classList.remove("hidden");
-    }
-
-    if (event.target && event.target.id === "back-to-profile-btn") {
-        document.getElementById("food-diary-section").classList.add("hidden");
-        document.getElementById("profile-section").classList.remove("hidden");
-    }
-});
-
-
-// Update Profile
-document.getElementById("profile-form").addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    const token = localStorage.getItem("token");
-    const message = document.getElementById("profile-message");
-
-    const updatedData = {
-        full_name: document.getElementById("profile-name").value,
-        age: document.getElementById("profile-age").value || null,
-        height_cm: document.getElementById("profile-height").value || null,
-        weight_kg: document.getElementById("profile-weight").value || null,
-        activity_level: document.getElementById("profile-activity").value,
-        goal: document.getElementById("profile-goal").value
-    };
-
-    try {
-        const response = await fetch(`${API_URL}/api/profile`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(updatedData)
-        });
-
-        const result = await response.json();
-
-        message.textContent = result.message;
-        message.style.color = response.ok ? "green" : "red";
-
-    } catch (error) {
-        message.textContent = "Could not update profile.";
-        message.style.color = "red";
-    }
-});
-
-
-// ======================================
-// FOOD DIARY FUNCTIONS
-// ======================================
-
-
-// Load Food Entries and Daily Summary
-async function loadFoodDiary() {
-    const token = localStorage.getItem("token");
-    const selectedDate = document.getElementById("diary-date").value;
-
-    if (!token || !selectedDate) return;
-
-    const list = document.getElementById("food-entries-list");
-
-    try {
-        const response = await fetch(
-            `${API_URL}/api/food-entries?date=${selectedDate}`,
-            {
-                headers: { "Authorization": `Bearer ${token}` }
-            }
-        );
-
-        const entries = await response.json();
-
-        if (!response.ok) {
-            list.textContent = entries.message || "Could not load food entries.";
-            return;
-        }
-
-        renderFoodEntries(entries);
-
-        const summaryResponse = await fetch(
-            `${API_URL}/api/food-entries/summary?date=${selectedDate}`,
-            {
-                headers: { "Authorization": `Bearer ${token}` }
-            }
-        );
-
-        const summary = await summaryResponse.json();
-
-        if (summaryResponse.ok) {
-            document.getElementById("total-entries").textContent =
-                summary.total_entries;
-
-            document.getElementById("total-calories").textContent =
-                Number(summary.total_calories).toFixed(2);
-        }
-
-    } catch (error) {
-        list.textContent = "Could not connect to server.";
-    }
+function updateActivityPreview() {
+    const isCustom = activitySelect.value === "Custom";
+    customActivityWrap.hidden = !isCustom;
+    const burned = getEstimatedBurnedCalories();
+    activityCaloriePreview.textContent = `${burned} kcal`;
 }
 
+function showActivityMessage(text, type = "") {
+    activityMessage.textContent = text;
+    activityMessage.className = `message ${type}`.trim();
+}
 
-// Display Food Entries
-function renderFoodEntries(entries) {
-    const list = document.getElementById("food-entries-list");
+activitySelect.addEventListener("change", updateActivityPreview);
+activityDuration.addEventListener("input", updateActivityPreview);
 
-    list.innerHTML = "";
+document.querySelectorAll(".activity-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+        activitySelect.value = chip.dataset.activity;
+        activityDuration.value = chip.dataset.minutes;
+        updateActivityPreview();
+        showActivityMessage("Suggestion selected. Click Save activity to log it.", "success");
+    });
+});
 
-    if (entries.length === 0) {
-        list.innerHTML = "<p>No food entries found for this date. Add your first meal!</p>";
+saveActivityBtn.addEventListener("click", async () => {
+    const isCustom = activitySelect.value === "Custom";
+    const activityName = isCustom ? customActivityInput.value.trim() : activitySelect.value;
+    const durationMinutes = Number(activityDuration.value);
+    const caloriesBurned = getEstimatedBurnedCalories();
+
+    if (!activityName) {
+        showActivityMessage("Please enter a custom activity name.", "error");
+        customActivityInput.focus();
         return;
     }
 
-    entries.forEach(function (entry) {
-        const card = document.createElement("div");
-        card.className = "food-entry-card";
+    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0 || durationMinutes > 1440) {
+        showActivityMessage("Please enter a valid duration in minutes (1 to 1440).", "error");
+        activityDuration.focus();
+        return;
+    }
 
-        const name = document.createElement("h4");
-        name.textContent = entry.food_name;
-
-        const details = document.createElement("p");
-        details.textContent =
-            `${entry.meal_type} | ${entry.portion || "Portion not specified"} | ${entry.calories} kcal`;
-
-        const editButton = document.createElement("button");
-        editButton.type = "button";
-        editButton.textContent = "Edit";
-
-        editButton.addEventListener("click", function () {
-            editFoodEntry(entry);
-        });
-
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.textContent = "Delete";
-
-        deleteButton.addEventListener("click", function () {
-            deleteFoodEntry(entry.entry_id);
-        });
-
-        card.appendChild(name);
-        card.appendChild(details);
-        card.appendChild(editButton);
-        card.appendChild(deleteButton);
-
-        list.appendChild(card);
-    });
-}
-
-
-// Add or Update Food Entry (Fixed for Multiple Entries and Auto Summary Updates)
-document.getElementById("food-form").addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    const token = localStorage.getItem("token");
-    const message = document.getElementById("food-message");
-    const submitButton = document.getElementById("food-submit-button");
-    const formElement = document.getElementById("food-form");
-
-    const editId = formElement.dataset.editId;
-
-    const foodData = {
-        food_name: document.getElementById("food-name").value,
-        meal_type: document.getElementById("meal-type").value,
-        portion: document.getElementById("food-portion").value,
-        calories: document.getElementById("food-calories").value,
-        entry_date: document.getElementById("food-date").value
-    };
-
-    const url = editId
-        ? `${API_URL}/api/food-entries/${editId}`
-        : `${API_URL}/api/food-entries`;
+    saveActivityBtn.disabled = true;
+    showActivityMessage("");
 
     try {
-        const response = await fetch(url, {
-            method: editId ? "PUT" : "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(foodData)
+        const response = await fetch("/api/activities", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ activityName, durationMinutes, caloriesBurned })
         });
 
         const result = await response.json();
-
-        message.textContent = result.message;
-        message.style.color = response.ok ? "green" : "red";
-
-        if (response.ok) {
-            formElement.reset();
-            
-            // Clear edit state so subsequent submissions create new entries instead of replacing old ones
-            delete formElement.dataset.editId;
-            submitButton.textContent = "Add Food";
-
-            document.getElementById("food-date").value = getTodayDate();
-            document.getElementById("diary-date").value = foodData.entry_date;
-
-            // Instantly refresh food list and calorie summary
-            await loadFoodDiary();
+        if (!response.ok) {
+            throw new Error(result.message || "Could not save activity.");
         }
 
+        activityDuration.value = "";
+        customActivityInput.value = "";
+        updateActivityPreview();
+        showToast("Activity logged ✓");
+        await loadActivities();
     } catch (error) {
-        message.textContent = "Could not save food entry.";
-        message.style.color = "red";
+        showActivityMessage(error.message || "Could not save activity.", "error");
+    } finally {
+        saveActivityBtn.disabled = false;
     }
 });
 
+async function loadActivities() {
+    try {
+        const response = await fetch("/api/activities", { headers: authHeaders() });
+        if (!response.ok) throw new Error("Failed to load activities.");
 
-// Edit Food Entry
-function editFoodEntry(entry) {
-    document.getElementById("food-name").value = entry.food_name;
-    document.getElementById("meal-type").value = entry.meal_type;
-    document.getElementById("food-portion").value = entry.portion || "";
-    document.getElementById("food-calories").value = entry.calories;
-    document.getElementById("food-date").value = entry.entry_date.substring(0, 10);
+        const items = await response.json();
+        activityEntries.innerHTML = "";
 
-    const formElement = document.getElementById("food-form");
-    formElement.dataset.editId = entry.entry_id;
+        if (!Array.isArray(items) || items.length === 0) {
+            totalBurnedBadge.textContent = "Total burned: 0 kcal";
+            activityEntries.innerHTML = '<div class="diary-empty">No activities logged yet. Add a workout above to get started.</div>';
+            return;
+        }
 
-    document.getElementById("food-submit-button").textContent = "Update Food";
+        const totalBurned = items.reduce((sum, item) => sum + Number(item.calories_burned || 0), 0);
+        totalBurnedBadge.textContent = `Total burned: ${Math.round(totalBurned)} kcal`;
 
-    document.getElementById("food-message").textContent =
-        "Editing food entry. Update the information and click Update Food.";
+        items.forEach(item => {
+            const row = document.createElement("article");
+            row.className = "diary-entry";
 
-    formElement.scrollIntoView({
-        behavior: "smooth"
-    });
+            const thumb = document.createElement("div");
+            thumb.className = "diary-thumb";
+            thumb.innerHTML = '<svg class="icon"><use href="#i-clock"></use></svg>';
+
+            const info = document.createElement("div");
+            info.className = "diary-info";
+
+            const title = document.createElement("strong");
+            title.textContent = item.activity_name;
+
+            const details = document.createElement("span");
+            details.textContent = `${item.duration_minutes} mins`;
+
+            const date = document.createElement("time");
+            const parsedDate = new Date(item.created_at);
+            date.textContent = Number.isNaN(parsedDate.getTime()) ? "" : parsedDate.toLocaleString();
+
+            info.append(title, details, date);
+
+            const calories = document.createElement("div");
+            calories.className = "diary-calories";
+
+            const calVal = document.createElement("strong");
+            calVal.textContent = Number(item.calories_burned).toFixed(0);
+
+            const calUnit = document.createElement("span");
+            calUnit.textContent = "kcal";
+
+            calories.append(calVal, calUnit);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "delete-button";
+            deleteBtn.title = "Delete activity";
+            deleteBtn.innerHTML = '<svg class="icon"><use href="#i-trash"></use></svg>';
+            deleteBtn.addEventListener("click", async () => {
+                if (!confirm(`Delete "${item.activity_name}"?`)) return;
+                deleteBtn.disabled = true;
+                try {
+                    const res = await fetch(`/api/activities/${encodeURIComponent(item.id)}`, { method: "DELETE", headers: authHeaders() });
+                    if (!res.ok) throw new Error("Could not delete activity.");
+                    showToast("Activity deleted");
+                    await loadActivities();
+                } catch (err) {
+                    alert(err.message);
+                    deleteBtn.disabled = false;
+                }
+            });
+
+            row.append(thumb, info, calories, deleteBtn);
+            activityEntries.appendChild(row);
+        });
+    } catch (error) {
+        console.error("Load activities error:", error);
+    }
 }
 
+// --------------------------------------------------
+// WEIGHT & PROGRESS TRACKING (NAILA)
+// --------------------------------------------------
 
-// Delete Food Entry
-async function deleteFoodEntry(entryId) {
-    const confirmed = confirm("Are you sure you want to delete this food entry?");
+const weightInput = document.getElementById("weightInput");
+const weightNoteInput = document.getElementById("weightNoteInput");
+const weightMessage = document.getElementById("weightMessage");
+const saveWeightBtn = document.getElementById("saveWeightBtn");
+const weightEntries = document.getElementById("weightEntries");
+const startWeightStat = document.getElementById("startWeightStat");
+const latestWeightStat = document.getElementById("latestWeightStat");
+const changeWeightStat = document.getElementById("changeWeightStat");
+const weightChartContainer = document.getElementById("weightChartContainer");
 
-    if (!confirmed) return;
+function showWeightMessage(text, type = "") {
+    weightMessage.textContent = text;
+    weightMessage.className = `message ${type}`.trim();
+}
 
-    const token = localStorage.getItem("token");
-    const message = document.getElementById("food-message");
+saveWeightBtn.addEventListener("click", async () => {
+    const weightKg = Number(weightInput.value);
+    const note = weightNoteInput.value.trim();
+
+    if (!Number.isFinite(weightKg) || weightKg < 20 || weightKg > 500) {
+        showWeightMessage("Please enter a valid weight between 20 kg and 500 kg.", "error");
+        weightInput.focus();
+        return;
+    }
+
+    saveWeightBtn.disabled = true;
+    showWeightMessage("");
 
     try {
-        const response = await fetch(
-            `${API_URL}/api/food-entries/${entryId}`,
-            {
-                method: "DELETE",
-                headers: { "Authorization": `Bearer ${token}` }
-            }
-        );
+        const response = await fetch("/api/weights", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ weightKg, note })
+        });
 
         const result = await response.json();
-
-        message.textContent = result.message;
-        message.style.color = response.ok ? "green" : "red";
-
-        if (response.ok) {
-            await loadFoodDiary();
+        if (!response.ok) {
+            throw new Error(result.message || "Could not save weight.");
         }
 
+        weightInput.value = "";
+        weightNoteInput.value = "";
+        showToast("Weight logged ✓");
+        await loadWeights();
     } catch (error) {
-        message.textContent = "Could not delete food entry.";
-        message.style.color = "red";
+        showWeightMessage(error.message || "Could not save weight.", "error");
+    } finally {
+        saveWeightBtn.disabled = false;
     }
-};
-
-
-// Change selected date
-document.getElementById("diary-date").addEventListener("change", function () {
-    loadFoodDiary();
 });
 
+function renderWeightChart(chronologicalItems) {
+    if (chronologicalItems.length < 2) {
+        weightChartContainer.innerHTML =
+            '<p class="helper-text" style="text-align: center; margin: 16px 0;">Log at least two weight entries to see your progress line.</p>';
+        return;
+    }
 
-// Logout
-document.getElementById("logout-button").addEventListener("click", function () {
-    localStorage.removeItem("token");
+    const width = 520;
+    const height = 160;
+    const padX = 36;
+    const padY = 26;
 
-    document.getElementById("profile-section").classList.add("hidden");
-    document.getElementById("food-diary-section").classList.add("hidden");
-    document.getElementById("auth-section").classList.remove("hidden");
+    const weights = chronologicalItems.map(item => Number(item.weight_kg));
+    const minW = Math.min(...weights);
+    const maxW = Math.max(...weights);
+    const range = maxW - minW || 1;
 
-    document.getElementById("profile-message").textContent = "";
-    document.getElementById("login-message").textContent = "";
-    document.getElementById("food-message").textContent = "";
+    const points = chronologicalItems.map((item, idx) => {
+        const x = padX + (idx / (chronologicalItems.length - 1)) * (width - padX * 2);
+        const y = height - padY - ((Number(item.weight_kg) - minW) / range) * (height - padY * 2);
+        return { x, y, weight: Number(item.weight_kg).toFixed(1) };
+    });
 
-    alert("You have logged out successfully.");
-});
+    const polylinePoints = points.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+    const circles = points
+        .map(
+            p => `
+            <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="#2f6f4e" />
+            <text x="${p.x.toFixed(1)}" y="${(p.y - 9).toFixed(1)}" text-anchor="middle" font-size="11" fill="#243127" font-weight="600">${p.weight} kg</text>
+        `
+        )
+        .join("");
 
+    weightChartContainer.innerHTML = `
+        <svg class="weight-chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Weight progress chart">
+            <polyline fill="none" stroke="#2f6f4e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${polylinePoints}" />
+            ${circles}
+        </svg>
+    `;
+}
 
-// Check existing login when page opens
-window.addEventListener("DOMContentLoaded", function () {
-    loadProfile();
-});
+async function loadWeights() {
+    try {
+        const response = await fetch("/api/weights", { headers: authHeaders() });
+        if (!response.ok) throw new Error("Failed to load weights.");
+
+        const items = await response.json();
+        weightEntries.innerHTML = "";
+
+        if (!Array.isArray(items) || items.length === 0) {
+            startWeightStat.textContent = "—";
+            latestWeightStat.textContent = "—";
+            changeWeightStat.textContent = "—";
+            renderWeightChart([]);
+            weightEntries.innerHTML = '<div class="diary-empty">No weight entries yet. Log your first weight above.</div>';
+            return;
+        }
+
+        const chronological = [...items].reverse();
+        const startWeight = Number(chronological[0].weight_kg);
+        const latestWeight = Number(chronological[chronological.length - 1].weight_kg);
+        const diff = latestWeight - startWeight;
+        const sign = diff > 0 ? "+" : "";
+
+        startWeightStat.textContent = `${startWeight.toFixed(1)} kg`;
+        latestWeightStat.textContent = `${latestWeight.toFixed(1)} kg`;
+        changeWeightStat.textContent = `${sign}${diff.toFixed(1)} kg`;
+
+        renderWeightChart(chronological);
+
+        items.forEach(item => {
+            const row = document.createElement("article");
+            row.className = "diary-entry";
+
+            const thumb = document.createElement("div");
+            thumb.className = "diary-thumb";
+            thumb.innerHTML = '<svg class="icon"><use href="#i-check"></use></svg>';
+
+            const info = document.createElement("div");
+            info.className = "diary-info";
+
+            const title = document.createElement("strong");
+            title.textContent = `${Number(item.weight_kg).toFixed(1)} kg`;
+
+            const note = document.createElement("span");
+            note.textContent = item.note || "Weight check-in";
+
+            const date = document.createElement("time");
+            const parsedDate = new Date(item.created_at);
+            date.textContent = Number.isNaN(parsedDate.getTime()) ? "" : parsedDate.toLocaleString();
+
+            info.append(title, note, date);
+
+            const badge = document.createElement("div");
+            badge.className = "diary-calories";
+            badge.innerHTML = `<strong>${Number(item.weight_kg).toFixed(1)}</strong><span>kg</span>`;
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "delete-button";
+            deleteBtn.title = "Delete weight entry";
+            deleteBtn.innerHTML = '<svg class="icon"><use href="#i-trash"></use></svg>';
+            deleteBtn.addEventListener("click", async () => {
+                if (!confirm(`Delete weight entry (${Number(item.weight_kg).toFixed(1)} kg)?`)) return;
+                deleteBtn.disabled = true;
+                try {
+                    const res = await fetch(`/api/weights/${encodeURIComponent(item.id)}`, { method: "DELETE", headers: authHeaders() });
+                    if (!res.ok) throw new Error("Could not delete weight entry.");
+                    showToast("Weight entry deleted");
+                    await loadWeights();
+                } catch (err) {
+                    alert(err.message);
+                    deleteBtn.disabled = false;
+                }
+            });
+
+            row.append(thumb, info, badge, deleteBtn);
+            weightEntries.appendChild(row);
+        });
+    } catch (error) {
+        console.error("Load weights error:", error);
+    }
+}
+
+updateActivityPreview();

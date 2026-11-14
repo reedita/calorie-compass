@@ -1,25 +1,63 @@
-
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
-const mysql = require("mysql2/promise");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { GoogleGenAI } = require("@google/genai");
+const multer = require("multer");
 require("dotenv").config();
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+// Serve frontend files
+app.use(express.static(path.join(__dirname, "..")));
 
-const db = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "../html/index.html"));
 });
+const db = require("./db");
+// Gemini AI setup
+const genAI = process.env.GEMINI_API_KEY
+    ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+    : null;
 
+// Image upload configuration (memory only, maximum 5 MB)
+const foodUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024
+    },
+    fileFilter: (req, file, callback) => {
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+        if (!allowedTypes.includes(file.mimetype)) {
+            return callback(new Error("Only JPG, PNG and WEBP images are allowed."));
+        }
+
+        callback(null, true);
+    }
+}).single("foodImage");
+
+// Handle image upload errors
+function handleFoodUpload(req, res, next) {
+    foodUpload(req, res, (error) => {
+        if (error) {
+            const status = error instanceof multer.MulterError
+                ? (error.code === "LIMIT_FILE_SIZE" ? 413 : 400)
+                : 400;
+
+            return res.status(status).json({
+                message: error.code === "LIMIT_FILE_SIZE"
+                    ? "Image must be smaller than 5 MB."
+                    : error.message
+            });
+        }
+
+        next();
+    });
+}
 // Verify user login token
 function authenticateToken(req, res, next) {
     const authHeader = req.headers.authorization;
@@ -43,10 +81,6 @@ function authenticateToken(req, res, next) {
     });
 }
 
-// Home route
-app.get("/", (req, res) => {
-    res.json({ message: "Calorie Compass backend is running!" });
-});
 
 // User Registration
 app.post("/api/auth/register", async (req, res) => {
@@ -264,12 +298,160 @@ app.put("/api/profile", authenticateToken, async (req, res) => {
     }
 });
 
+// ======================================
+// GEMINI FOOD RECOGNITION API
+// ======================================
+
+app.post(
+    "/api/recognize-food",
+    authenticateToken,
+    handleFoodUpload,
+    async (req, res) => {
+        try {
+            if (!genAI) {
+                return res.status(503).json({
+                    message: "Food recognition is currently unavailable. Please try again later."
+                });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({
+                    message: "Please upload a food photo."
+                });
+            }
+
+            const prompt = `
+You are a food identification assistant for a calorie tracking application.
+
+Analyze the uploaded food photograph.
+
+Pay special attention to South Asian and Bangladeshi foods.
+Distinguish between visually similar foods where possible, such as:
+- Plain steamed rice
+- Polao
+- Biryani
+- Khichuri
+- Fried rice
+
+Identify each clearly visible food item separately.
+
+Estimate the portion in grams based on the visible food.
+This is only an approximate visual estimate. Do not claim exact measurements.
+
+Estimate calories per 100 grams using reasonable nutritional values.
+Do not invent ingredients or food items that cannot be identified.
+
+If the image does not contain identifiable food, return:
+{
+  "isFood": false,
+  "foodItems": []
+}
+
+Otherwise, return ONLY valid JSON in this exact structure:
+
+{
+  "isFood": true,
+  "foodItems": [
+    {
+      "name": "Steamed rice",
+      "estimatedPortionGrams": 150,
+      "estimatedCaloriesPer100g": 130,
+      "confidence": 0.90,
+      "notes": "Approximate visual estimate"
+    }
+  ]
+}
+
+Confidence must be a number between 0 and 1.
+All calorie and portion estimates must be positive numbers.
+`;
+
+            const response = await genAI.models.generateContent({
+                model: "gemini-flash-latest",
+                contents: [
+                    {
+                        inlineData: {
+                            mimeType: req.file.mimetype,
+                            data: req.file.buffer.toString("base64")
+                        }
+                    },
+                    prompt
+                ]
+            });
+
+            const rawText = response.text;
+
+            if (!rawText) {
+                throw new Error("Gemini returned an empty response.");
+            }
+
+            const cleanedText = rawText
+                .replace(/^```(?:json)?\s*/i, "")
+                .replace(/\s*```$/, "")
+                .trim();
+
+            const result = JSON.parse(cleanedText);
+
+            if (
+                typeof result.isFood !== "boolean" ||
+                !Array.isArray(result.foodItems)
+            ) {
+                throw new Error("Invalid recognition response.");
+            }
+
+            if (!result.isFood || result.foodItems.length === 0) {
+                return res.json({
+                    isFood: false,
+                    foodItems: []
+                });
+            }
+
+            const foodItems = result.foodItems
+                .filter(item =>
+                    item.name &&
+                    Number(item.estimatedPortionGrams) > 0 &&
+                    Number(item.estimatedCaloriesPer100g) > 0
+                )
+                .map(item => ({
+                    name: String(item.name).trim(),
+                    estimatedPortionGrams: Number(item.estimatedPortionGrams),
+                    estimatedCaloriesPer100g: Number(item.estimatedCaloriesPer100g),
+                    confidence: Math.min(
+                        1,
+                        Math.max(0, Number(item.confidence) || 0)
+                    ),
+                    notes: String(item.notes || "Approximate visual estimate")
+                }));
+
+            if (foodItems.length === 0) {
+                return res.json({
+                    isFood: false,
+                    foodItems: []
+                });
+            }
+
+            res.json({
+                isFood: true,
+                foodItems
+            });
+
+        } catch (error) {
+            console.error("Food recognition error:", error.message);
+
+            res.status(502).json({
+                message: "Food recognition failed. Please try another photo."
+            });
+        }
+    }
+);
+
 // Start server
 async function startServer() {
     try {
         const connection = await db.getConnection();
         console.log("MySQL database connected successfully!");
         connection.release();
+        await initActivityAndWeightTables();
 
         const PORT = process.env.PORT || 3000;
 
@@ -284,176 +466,172 @@ async function startServer() {
 
 startServer();
 
-// ======================================
-// FOOD DIARY APIs
-// ======================================
 
-// View food entries for a specific date
-app.get("/api/food-entries", authenticateToken, async (req, res) => {
-    try {
-        const { date } = req.query;
+ // ======================================
+ // FOOD DIARY APIs
+ // ======================================
 
-        if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-            return res.status(400).json({ message: "Invalid date format." });
-        }
+ // View food entries
+ app.get("/api/food-entries", authenticateToken, async (req, res) => {
+     try {
+         const { date } = req.query;
 
-        let query = `
-            SELECT entry_id, food_name, meal_type, portion,
-                   calories, entry_date, created_at
-            FROM food_entries
-            WHERE user_id = ?
-        `;
+         if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+             return res.status(400).json({ message: "Invalid date format." });
+         }
 
-        const params = [req.user.user_id];
-
-        if (date) {
-            query += " AND entry_date = ?";
-            params.push(date);
-        }
-
-        query += " ORDER BY created_at DESC";
-
-        const [entries] = await db.execute(query, params);
-
-        res.json(entries);
-
-    } catch (error) {
-        console.error("Food diary error:", error.message);
-        res.status(500).json({ message: "Could not load food entries." });
-    }
-});
-
-
-// Get daily calorie summary
-app.get("/api/food-entries/summary", authenticateToken, async (req, res) => {
-    try {
-        const { date } = req.query;
-
-        if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-            return res.status(400).json({ message: "A valid date is required." });
-        }
-
-        const [result] = await db.execute(
-            `SELECT COUNT(*) AS total_entries,
-                    COALESCE(SUM(calories), 0) AS total_calories
+         let query = `
+             SELECT id, id AS entry_id, food_name, meal_type,
+                    portion_grams, portion_grams AS portion,
+                    calories, entry_date, image_path, created_at
              FROM food_entries
-             WHERE user_id = ? AND entry_date = ?`,
-            [req.user.user_id, date]
-        );
+             WHERE user_id = ?
+         `;
 
-        res.json(result[0]);
+         const params = [req.user.user_id];
 
-    } catch (error) {
-        console.error("Daily summary error:", error.message);
-        res.status(500).json({ message: "Could not load daily summary." });
-    }
-});
+         if (date) {
+             query += " AND entry_date = ?";
+             params.push(date);
+         }
+
+         query += " ORDER BY created_at DESC";
+
+         const [entries] = await db.execute(query, params);
+         res.json(entries);
+
+     } catch (error) {
+         console.error("Food diary error:", error.message);
+         res.status(500).json({ message: "Could not load food entries." });
+     }
+ });
+
+ // Daily calorie summary
+ app.get("/api/food-entries/summary", authenticateToken, async (req, res) => {
+     try {
+         const { date } = req.query;
+
+         if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+             return res.status(400).json({ message: "A valid date is required." });
+         }
+
+         const [result] = await db.execute(
+             `SELECT COUNT(*) AS total_entries,
+                     COALESCE(SUM(calories), 0) AS total_calories
+              FROM food_entries
+              WHERE user_id = ? AND entry_date = ?`,
+             [req.user.user_id, date]
+         );
+
+         res.json(result[0]);
+
+     } catch (error) {
+         console.error("Daily summary error:", error.message);
+         res.status(500).json({ message: "Could not load daily summary." });
+     }
+ });
+
+ // Add food entry
+ app.post("/api/food-entries", authenticateToken, async (req, res) => {
+     try {
+         const { food_name, meal_type, portion, calories, entry_date } = req.body;
+
+         if (!food_name?.trim() || !meal_type || !entry_date ||
+             portion == null || calories == null) {
+             return res.status(400).json({
+                 message: "Food name, meal type, portion, calories and date are required."
+             });
+         }
+
+         if (!Number.isFinite(Number(portion)) || Number(portion) <= 0 ||
+             !Number.isFinite(Number(calories)) || Number(calories) <= 0) {
+             return res.status(400).json({ message: "Invalid portion or calorie amount." });
+         }
+
+         if (!/^\d{4}-\d{2}-\d{2}$/.test(entry_date)) {
+             return res.status(400).json({ message: "Invalid date format." });
+         }
+
+         const [result] = await db.execute(
+             `INSERT INTO food_entries
+              (user_id, food_name, meal_type, portion_grams, calories, entry_date)
+              VALUES (?, ?, ?, ?, ?, ?)`,
+             [
+                 req.user.user_id,
+                 food_name.trim(),
+                 meal_type,
+                 Number(portion),
+                 Number(calories),
+                 entry_date
+             ]
+         );
+
+         res.status(201).json({
+             message: "Food entry added successfully!",
+             entry_id: result.insertId
+         });
+
+     } catch (error) {
+         console.error("Add food error:", error.message);
+         res.status(500).json({ message: "Could not add food entry." });
+     }
+ });
 
 
-// Add a food entry
-app.post("/api/food-entries", authenticateToken, async (req, res) => {
-    try {
-        const {
-            food_name,
-            meal_type,
-            portion,
-            calories,
-            entry_date
-        } = req.body;
-
-        if (!food_name || !food_name.trim() || !meal_type || !entry_date || calories == null) {
-            return res.status(400).json({
-                message: "Food name, meal type, calories and date are required."
-            });
-        }
-
-        if (!Number.isFinite(Number(calories)) || Number(calories) <= 0) {
-            return res.status(400).json({ message: "Invalid calorie amount." });
-        }
-
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(entry_date)) {
-            return res.status(400).json({ message: "Invalid date format." });
-        }
-
-        const [result] = await db.execute(
-            `INSERT INTO food_entries
-             (user_id, food_name, meal_type, portion, calories, entry_date)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [
-                req.user.user_id,
-                food_name.trim(),
-                meal_type,
-                portion || null,
-                Number(calories),
-                entry_date
-            ]
-        );
-
-        res.status(201).json({
-            message: "Food entry added successfully!",
-            entry_id: result.insertId
-        });
-
-    } catch (error) {
-        console.error("Add food error:", error.message);
-        res.status(500).json({ message: "Could not add food entry." });
-    }
-});
 
 
 // Update a food entry
 app.put("/api/food-entries/:entryId", authenticateToken, async (req, res) => {
     try {
         const entryId = Number(req.params.entryId);
-
-        const {
-            food_name,
-            meal_type,
-            portion,
-            calories,
-            entry_date
-        } = req.body;
+        const { food_name, meal_type, portion, calories, entry_date } = req.body;
 
         if (!Number.isInteger(entryId) || entryId <= 0) {
             return res.status(400).json({ message: "Invalid entry ID." });
         }
 
-        if (!food_name || !food_name.trim() || !meal_type || calories == null || !entry_date) {
-            return res.status(400).json({ message: "Required food information is missing." });
+        if (!food_name?.trim() || !meal_type || portion == null ||
+            calories == null || !entry_date) {
+            return res.status(400).json({
+                message: "Required food information is missing."
+            });
         }
 
-        if (!Number.isFinite(Number(calories)) || Number(calories) <= 0) {
-            return res.status(400).json({ message: "Invalid calorie amount." });
+        if (!Number.isFinite(Number(portion)) || Number(portion) <= 0 ||
+            !Number.isFinite(Number(calories)) || Number(calories) <= 0) {
+            return res.status(400).json({
+                message: "Invalid portion or calorie amount."
+            });
         }
 
         if (!/^\d{4}-\d{2}-\d{2}$/.test(entry_date)) {
             return res.status(400).json({ message: "Invalid date format." });
         }
 
-        const [result] = await db.execute(
-            `UPDATE food_entries
-             SET food_name = ?, meal_type = ?, portion = ?,
-                 calories = ?, entry_date = ?
-             WHERE entry_id = ? AND user_id = ?`,
-            [
-                food_name.trim(),
-                meal_type,
-                portion || null,
-                Number(calories),
-                entry_date,
-                entryId,
-                req.user.user_id
-            ]
-        );
-
         const [existing] = await db.execute(
-            "SELECT entry_id FROM food_entries WHERE entry_id = ? AND user_id = ?",
+            "SELECT id FROM food_entries WHERE id = ? AND user_id = ?",
             [entryId, req.user.user_id]
         );
 
         if (existing.length === 0) {
             return res.status(404).json({ message: "Food entry not found." });
         }
+
+        await db.execute(
+            `UPDATE food_entries
+             SET food_name = ?, meal_type = ?, portion_grams = ?,
+                 calories = ?, entry_date = ?
+             WHERE id = ? AND user_id = ?`,
+            [
+                food_name.trim(),
+                meal_type,
+                Number(portion),
+                Number(calories),
+                entry_date,
+                entryId,
+                req.user.user_id
+            ]
+        );
 
         res.json({ message: "Food entry updated successfully!" });
 
@@ -474,7 +652,7 @@ app.delete("/api/food-entries/:entryId", authenticateToken, async (req, res) => 
         }
 
         const [result] = await db.execute(
-            "DELETE FROM food_entries WHERE entry_id = ? AND user_id = ?",
+            "DELETE FROM food_entries WHERE id = ? AND user_id = ?",
             [entryId, req.user.user_id]
         );
 
@@ -488,6 +666,211 @@ app.delete("/api/food-entries/:entryId", authenticateToken, async (req, res) => 
         console.error("Delete food error:", error.message);
         res.status(500).json({ message: "Could not delete food entry." });
     }
+});
+// --------------------------------------------------
+// ACTIVITY & WEIGHT TABLES + ROUTES (NAILA)
+// --------------------------------------------------
+
+async function initActivityAndWeightTables() {
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS activity_entries (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            activity_name VARCHAR(120) NOT NULL,
+            duration_minutes INT NOT NULL,
+            calories_burned DECIMAL(8, 2) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_activity_user (user_id)
+        )
+    `);
+
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS weight_entries (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            weight_kg DECIMAL(5, 2) NOT NULL,
+            note VARCHAR(150) DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_weight_user (user_id)
+        )
+    `);
+
+    // Add user_id to tables created by the earlier version of Naila's code.
+    for (const table of ["activity_entries", "weight_entries"]) {
+        const [columns] = await db.query(`SHOW COLUMNS FROM ${table} LIKE 'user_id'`);
+        if (columns.length === 0) {
+            await db.query(`ALTER TABLE ${table} ADD COLUMN user_id INT NULL`);
+            await db.query(`CREATE INDEX idx_${table}_user ON ${table}(user_id)`);
+        }
+    }
+}
+
+// Retrieve logged activities
+app.get("/api/activities", authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            "SELECT * FROM activity_entries WHERE user_id = ? ORDER BY created_at DESC", [req.user.user_id]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error("Retrieve activities error:", error);
+        res.status(500).json({ message: "Could not load activities." });
+    }
+});
+
+// Save a new activity
+app.post("/api/activities", authenticateToken, async (req, res) => {
+    try {
+        const { activityName, durationMinutes, caloriesBurned } = req.body;
+
+        if (
+            typeof activityName !== "string" ||
+            activityName.trim() === "" ||
+            durationMinutes === undefined ||
+            caloriesBurned === undefined
+        ) {
+            return res.status(400).json({
+                message: "Activity name, duration, and calories burned are required."
+            });
+        }
+
+        const duration = Number(durationMinutes);
+        const calories = Number(caloriesBurned);
+
+        if (
+            !Number.isFinite(duration) ||
+            !Number.isFinite(calories) ||
+            duration <= 0 ||
+            duration > 1440 ||
+            calories <= 0 ||
+            calories > 10000
+        ) {
+            return res.status(400).json({
+                message: "Enter a valid duration and calorie estimate greater than zero."
+            });
+        }
+
+        const [result] = await db.execute(
+            `INSERT INTO activity_entries (user_id, activity_name, duration_minutes, calories_burned)
+             VALUES (?, ?, ?, ?)`,
+            [req.user.user_id, activityName.trim().slice(0, 120), Math.round(duration), calories.toFixed(2)]
+        );
+
+        res.status(201).json({
+            message: "Activity logged successfully!",
+            activityId: result.insertId
+        });
+    } catch (error) {
+        console.error("Save activity error:", error);
+        res.status(500).json({ message: "Could not save activity." });
+    }
+});
+
+// Delete an activity
+app.delete("/api/activities/:id", authenticateToken, async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({ message: "Invalid activity ID." });
+        }
+
+        const [result] = await db.execute(
+            "DELETE FROM activity_entries WHERE id = ? AND user_id = ?",
+            [id, req.user.user_id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Activity entry not found." });
+        }
+
+        res.json({ message: "Activity deleted successfully." });
+    } catch (error) {
+        console.error("Delete activity error:", error);
+        res.status(500).json({ message: "Failed to delete activity." });
+    }
+});
+
+// Retrieve weight history
+app.get("/api/weights", authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            "SELECT * FROM weight_entries WHERE user_id = ? ORDER BY created_at DESC", [req.user.user_id]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error("Retrieve weights error:", error);
+        res.status(500).json({ message: "Could not load weight history." });
+    }
+});
+
+// Log a new weight entry
+app.post("/api/weights", authenticateToken, async (req, res) => {
+    try {
+        const { weightKg, note } = req.body;
+        const weight = Number(weightKg);
+
+        if (!Number.isFinite(weight) || weight < 20 || weight > 500) {
+            return res.status(400).json({
+                message: "Enter a valid weight between 20 kg and 500 kg."
+            });
+        }
+
+        const cleanNote = typeof note === "string" ? note.trim().slice(0, 150) : "";
+
+        const [result] = await db.execute(
+            `INSERT INTO weight_entries (user_id, weight_kg, note) VALUES (?, ?, ?)`,
+            [req.user.user_id, weight.toFixed(2), cleanNote]
+        );
+
+        res.status(201).json({
+            message: "Weight logged successfully!",
+            weightId: result.insertId
+        });
+    } catch (error) {
+        console.error("Save weight error:", error);
+        res.status(500).json({ message: "Could not save weight entry." });
+    }
+});
+
+// Delete a weight entry
+app.delete("/api/weights/:id", authenticateToken, async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({ message: "Invalid weight entry ID." });
+        }
+
+        const [result] = await db.execute(
+            "DELETE FROM weight_entries WHERE id = ? AND user_id = ?",
+            [id, req.user.user_id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Weight entry not found." });
+        }
+
+        res.json({ message: "Weight entry deleted successfully." });
+    } catch (error) {
+        console.error("Delete weight error:", error);
+        res.status(500).json({ message: "Failed to delete weight entry." });
+    }
+});
+// Global error handler
+
+app.use((error, req, res, next) => {
+    console.error("Server error:", error);
+
+    if (error instanceof multer.MulterError) {
+        if (error.code === "LIMIT_FILE_SIZE") {
+            return res.status(413).json({
+                message: "Image must be smaller than 5 MB."
+            });
+        }
+    }
+
+    res.status(error.status || 400).json({
+        message: error.message || "Something went wrong."
+    });
 });
 
 module.exports = { app, db };
