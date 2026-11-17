@@ -977,6 +977,7 @@ button:focus-visible, input:focus-visible {
 .account-grid form,
 #profile-form {
     display: grid;
+    align-content: start;
     gap: 8px;
 }
 
