@@ -25,6 +25,11 @@ function openAuthForm(form) {
 
 landingRegisterButton.addEventListener("click", () => openAuthForm("register"));
 landingLoginButton.addEventListener("click", () => openAuthForm("login"));
+document.getElementById("back-to-welcome").addEventListener("click", () => {
+    authSection.hidden = true;
+    landingSection.hidden = false;
+    landingSection.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
 const TOKEN_KEY = "calorieCompassToken";
 
