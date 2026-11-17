@@ -1104,3 +1104,49 @@ button:focus-visible, input:focus-visible {
   height: 170px;
   display: block;
 }
+
+
+/* WELCOME LANDING */
+.landing-panel {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.05fr .95fr;
+    align-items: center;
+    gap: 22px;
+    min-height: 430px;
+    margin: 28px 0 34px;
+    padding: clamp(26px, 5vw, 54px);
+    overflow: hidden;
+    border: 1px solid #e5ebdf;
+    border-radius: 26px;
+    background: linear-gradient(125deg, #ffffff 0%, #f3f7ef 100%);
+    box-shadow: 0 16px 40px rgba(49, 91, 64, .07);
+}
+.landing-copy { position: relative; z-index: 2; max-width: 480px; }
+.landing-kicker { color: var(--green-700); font-size: 10px; font-weight: 800; letter-spacing: 1.8px; }
+.landing-copy h1 { margin: 15px 0; color: var(--green-900); font: 800 clamp(38px, 6vw, 62px)/1.12 "Poppins", sans-serif; letter-spacing: -2px; }
+.landing-copy h1 span { color: var(--green-600); }
+.landing-copy > p { max-width: 390px; color: var(--muted); font-size: 15px; line-height: 1.8; }
+.landing-actions { display: grid; gap: 10px; max-width: 310px; margin-top: 25px; }
+.landing-actions .button { min-height: 48px; width: 100%; }
+.landing-points { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 24px; color: #637565; font-size: 11px; }
+.landing-points span { display: inline-flex; align-items: center; gap: 5px; }
+.landing-points .icon { width: 14px; height: 14px; color: var(--green-600); }
+.landing-art { position: relative; display: grid; min-height: 310px; place-items: center; }
+.landing-orbit { position: absolute; width: min(85%, 310px); aspect-ratio: 1; border: 1px solid #d9e6d5; border-radius: 50%; }
+.orbit-two { width: min(67%, 245px); border-style: dashed; }
+.landing-bowl { z-index: 1; display: grid; width: 190px; aspect-ratio: 1; place-items: center; border: 12px solid #fff; border-radius: 50%; background: #e6f0df; box-shadow: 0 18px 40px rgba(49,91,64,.13); }
+.landing-bowl span { font-size: 92px; filter: drop-shadow(0 8px 7px rgba(49,91,64,.12)); }
+.landing-leaf, .landing-food { position: absolute; z-index: 2; display: grid; width: 48px; height: 48px; place-items: center; border-radius: 16px; background: #fff; box-shadow: 0 8px 22px rgba(49,91,64,.1); font-size: 25px; }
+.leaf-one { top: 13%; left: 15%; transform: rotate(-14deg); }
+.leaf-two { right: 12%; bottom: 15%; transform: rotate(18deg); }
+.food-one { top: 18%; right: 12%; }
+.food-two { bottom: 13%; left: 13%; }
+@media (max-width: 650px) {
+    .landing-panel { grid-template-columns: 1fr; min-height: 0; gap: 4px; margin-top: 18px; padding: 28px 22px; }
+    .landing-copy h1 { font-size: 43px; }
+    .landing-copy > p { font-size: 13px; }
+    .landing-art { min-height: 230px; }
+    .landing-bowl { width: 145px; }
+    .landing-bowl span { font-size: 70px; }
+}
