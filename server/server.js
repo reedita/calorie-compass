@@ -373,7 +373,7 @@ All calorie and portion estimates must be positive numbers.
 `;
 
             const response = await genAI.models.generateContent({
-                model: "gemini-flash-latest",
+                model: "gemini-3.8-flash",
                 contents: [
                     {
                         inlineData: {

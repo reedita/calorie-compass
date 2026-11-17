@@ -1105,7 +1105,6 @@ button:focus-visible, input:focus-visible {
   display: block;
 }
 
-
 /* WELCOME LANDING */
 .landing-panel {
     position: relative;
@@ -1185,4 +1184,25 @@ button:focus-visible, input:focus-visible {
 .password-rules li.passed::before { content: "✓"; color: var(--green-700); font-weight: 800; }
 @media (max-width: 420px) {
     .password-rules { grid-template-columns: 1fr; }
+}
+/* FIX: Login form must not stretch vertically */
+#login-form {
+    align-content: start;
+    align-self: start;
+}
+
+#login-form > .button {
+    width: 100%;
+    align-self: start;
+    min-height: 45px;
+}
+
+#login-form > .message {
+    align-self: start;
+}
+
+/* FIX: Profile and registration inputs */
+.account-panel input,
+.account-panel select {
+    font-size: 16px;
 }
