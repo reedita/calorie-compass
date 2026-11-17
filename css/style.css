@@ -1153,3 +1153,36 @@ button:focus-visible, input:focus-visible {
 
 .landing-panel[hidden] { display: none !important; }
 .back-welcome { margin: 0 0 16px; }
+
+
+/* PASSWORD INPUTS + LIVE PASSWORD REQUIREMENTS */
+.password-input-wrap { position: relative; display: flex; align-items: center; }
+.password-input-wrap input { padding-right: 62px !important; }
+.password-toggle {
+    position: absolute;
+    right: 9px;
+    min-width: 42px;
+    min-height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: #edf3eb;
+    color: var(--green-800);
+    font-size: 11px;
+    font-weight: 700;
+}
+.password-rules {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 12px;
+    margin: 0 0 4px;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: 10px;
+}
+.password-rules li::before { content: "○"; margin-right: 6px; color: #a3ada0; }
+.password-rules li.passed { color: var(--green-700); }
+.password-rules li.passed::before { content: "✓"; color: var(--green-700); font-weight: 800; }
+@media (max-width: 420px) {
+    .password-rules { grid-template-columns: 1fr; }
+}
