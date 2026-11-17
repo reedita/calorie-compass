@@ -108,16 +108,16 @@ app.post("/api/auth/register", async (req, res) => {
             });
         }
 
-        if (age != null && (!Number.isInteger(Number(age)) || Number(age) < 1 || Number(age) > 120)) {
-            return res.status(400).json({ message: "Invalid age." });
+        if (age != null && (!Number.isInteger(Number(age)) || Number(age) < 13 || Number(age) > 100)) {
+            return res.status(400).json({ message: "Age must be between 13 and 100." });
         }
 
-        if (height_cm != null && (!Number.isFinite(Number(height_cm)) || Number(height_cm) <= 0)) {
-            return res.status(400).json({ message: "Invalid height." });
+        if (height_cm != null && (!Number.isFinite(Number(height_cm)) || Number(height_cm) < 100 || Number(height_cm) > 230)) {
+            return res.status(400).json({ message: "Height must be between 100 and 230 cm." });
         }
 
-        if (weight_kg != null && (!Number.isFinite(Number(weight_kg)) || Number(weight_kg) <= 0)) {
-            return res.status(400).json({ message: "Invalid weight." });
+        if (weight_kg != null && (!Number.isFinite(Number(weight_kg)) || Number(weight_kg) < 25 || Number(weight_kg) > 250)) {
+            return res.status(400).json({ message: "Weight must be between 25 and 250 kg." });
         }
 
         const normalizedEmail = email.trim().toLowerCase();
@@ -254,16 +254,16 @@ app.put("/api/profile", authenticateToken, async (req, res) => {
             goal
         } = req.body;
 
-        if (age != null && (!Number.isInteger(Number(age)) || Number(age) < 1 || Number(age) > 120)) {
-            return res.status(400).json({ message: "Invalid age." });
+        if (age != null && (!Number.isInteger(Number(age)) || Number(age) < 13 || Number(age) > 100)) {
+            return res.status(400).json({ message: "Age must be between 13 and 100." });
         }
 
-        if (height_cm != null && (!Number.isFinite(Number(height_cm)) || Number(height_cm) <= 0)) {
-            return res.status(400).json({ message: "Invalid height." });
+        if (height_cm != null && (!Number.isFinite(Number(height_cm)) || Number(height_cm) < 100 || Number(height_cm) > 230)) {
+            return res.status(400).json({ message: "Height must be between 100 and 230 cm." });
         }
 
-        if (weight_kg != null && (!Number.isFinite(Number(weight_kg)) || Number(weight_kg) <= 0)) {
-            return res.status(400).json({ message: "Invalid weight." });
+        if (weight_kg != null && (!Number.isFinite(Number(weight_kg)) || Number(weight_kg) < 25 || Number(weight_kg) > 250)) {
+            return res.status(400).json({ message: "Weight must be between 25 and 250 kg." });
         }
 
         const [result] = await db.execute(
