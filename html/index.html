@@ -85,8 +85,23 @@
                         <input id="register-email" type="email" required>
                     </label>
                     <label class="food-field">Password
-                        <input id="register-password" type="password" minlength="8" required>
+                        <div class="password-input-wrap">
+                            <input id="register-password" type="password" minlength="8" autocomplete="new-password" required>
+                            <button type="button" class="password-toggle" data-toggle-password="register-password" aria-label="Show password">Show</button>
+                        </div>
                     </label>
+                    <label class="food-field">Confirm password
+                        <div class="password-input-wrap">
+                            <input id="register-confirm-password" type="password" minlength="8" autocomplete="new-password" required>
+                            <button type="button" class="password-toggle" data-toggle-password="register-confirm-password" aria-label="Show confirm password">Show</button>
+                        </div>
+                    </label>
+                    <ul class="password-rules" id="password-rules" aria-live="polite">
+                        <li data-rule="length">At least 8 characters</li>
+                        <li data-rule="upper">One uppercase letter</li>
+                        <li data-rule="lower">One lowercase letter</li>
+                        <li data-rule="number">One number</li>
+                    </ul>
                     <label class="food-field">Age
                         <input id="age" type="number" min="13" max="100" inputmode="numeric" required>
                     </label>
@@ -123,7 +138,10 @@
                         <input id="login-email" type="email" required>
                     </label>
                     <label class="food-field">Password
-                        <input id="login-password" type="password" required>
+                        <div class="password-input-wrap">
+                            <input id="login-password" type="password" autocomplete="current-password" required>
+                            <button type="button" class="password-toggle" data-toggle-password="login-password" aria-label="Show password">Show</button>
+                        </div>
                     </label>
                     <button class="button button-primary" type="submit">Login</button>
                     <p class="message" id="login-message"></p>
