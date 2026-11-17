@@ -331,8 +331,10 @@ async function recognizeFood() {
     isRecognizing = true;
     recognizeBtn.disabled = true;
     loadingState.hidden = false;
+    recognizedFoods = [];
     recognitionResults.innerHTML = "";
     emptyResults.hidden = true;
+    updateSaveDock();
     fallbackPanel.hidden = true;
     showMessage("");
 
@@ -386,8 +388,13 @@ async function recognizeFood() {
         );
     } catch (error) {
         console.error("Food recognition error:", error);
+        recognizedFoods = [];
+        renderRecognizedFoods();
         fallbackPanel.hidden = false;
-        showMessage(error.message || "Recognition failed. Please try again.", "error");
+        showMessage(
+            "We're not sure what this is. Try a suggestion below or enter the food name manually.",
+            "error"
+        );
     } finally {
         isRecognizing = false;
         recognizeBtn.disabled = false;
