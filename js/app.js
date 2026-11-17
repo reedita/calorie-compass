@@ -12,6 +12,35 @@ const profileMessage = document.getElementById("profile-message");
 
 const logoutButton = document.getElementById("logout-button");
 
+document.querySelectorAll("[data-toggle-password]").forEach(button => {
+    button.addEventListener("click", () => {
+        const input = document.getElementById(button.dataset.togglePassword);
+        const showing = input.type === "text";
+        input.type = showing ? "password" : "text";
+        button.textContent = showing ? "Show" : "Hide";
+        button.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+    });
+});
+
+const registrationPassword = document.getElementById("register-password");
+const confirmRegistrationPassword = document.getElementById("register-confirm-password");
+const passwordRuleChecks = {
+    length: value => value.length >= 8,
+    upper: value => /[A-Z]/.test(value),
+    lower: value => /[a-z]/.test(value),
+    number: value => /[0-9]/.test(value)
+};
+
+function updatePasswordRules() {
+    const value = registrationPassword.value;
+    Object.entries(passwordRuleChecks).forEach(([rule, check]) => {
+        const item = document.querySelector(`[data-rule="${rule}"]`);
+        const passed = check(value);
+        item.classList.toggle("passed", passed);
+    });
+}
+registrationPassword.addEventListener("input", updatePasswordRules);
+
 const landingSection = document.getElementById("landing-section");
 const landingRegisterButton = document.getElementById("landing-register");
 const landingLoginButton = document.getElementById("landing-login");
@@ -95,12 +124,27 @@ async function loadProfile() {
 registerForm.addEventListener("submit", async event => {
     event.preventDefault();
 
+    const password = registrationPassword.value;
+    const confirmPassword = confirmRegistrationPassword.value;
+    const passwordIsValid = Object.values(passwordRuleChecks).every(check => check(password));
+
+    if (!passwordIsValid) {
+        showAuthMessage(registerMessage, "Please meet all password requirements.");
+        registrationPassword.focus();
+        return;
+    }
+    if (password !== confirmPassword) {
+        showAuthMessage(registerMessage, "Passwords do not match.");
+        confirmRegistrationPassword.focus();
+        return;
+    }
+
     showAuthMessage(registerMessage, "Creating account...", "success");
 
     const payload = {
         full_name: document.getElementById("full_name").value.trim(),
         email: document.getElementById("register-email").value.trim(),
-        password: document.getElementById("register-password").value,
+        password: registrationPassword.value,
         age: Number(document.getElementById("age").value),
         height_cm: Number(document.getElementById("height_cm").value),
         weight_kg: Number(document.getElementById("weight_kg").value),
