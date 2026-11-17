@@ -12,6 +12,20 @@ const profileMessage = document.getElementById("profile-message");
 
 const logoutButton = document.getElementById("logout-button");
 
+const landingSection = document.getElementById("landing-section");
+const landingRegisterButton = document.getElementById("landing-register");
+const landingLoginButton = document.getElementById("landing-login");
+
+function openAuthForm(form) {
+    landingSection.hidden = true;
+    authSection.hidden = false;
+    document.getElementById(form === "login" ? "login-email" : "full_name").focus();
+    authSection.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+landingRegisterButton.addEventListener("click", () => openAuthForm("register"));
+landingLoginButton.addEventListener("click", () => openAuthForm("login"));
+
 const TOKEN_KEY = "calorieCompassToken";
 
 function getToken() {
@@ -30,7 +44,9 @@ function showAuthMessage(element, message, type = "error") {
 }
 
 function setLoggedInUI(loggedIn) {
-    authSection.hidden = loggedIn;
+    const landingSection = document.getElementById("landing-section");
+    authSection.hidden = true;
+    landingSection.hidden = loggedIn;
     profileSection.hidden = !loggedIn;
 
     document.querySelector(".intro").hidden = !loggedIn;
