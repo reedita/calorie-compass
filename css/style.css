@@ -1150,3 +1150,6 @@ button:focus-visible, input:focus-visible {
     .landing-bowl { width: 145px; }
     .landing-bowl span { font-size: 70px; }
 }
+
+.landing-panel[hidden] { display: none !important; }
+.back-welcome { margin: 0 0 16px; }
