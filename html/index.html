@@ -35,6 +35,14 @@
                 </span>
             </a>
             <span class="topbar-note">Eat well. Feel good.</span>
+            <div class="more-menu-wrap">
+                <button type="button" class="profile-nav-button" id="moreMenuToggle" aria-expanded="false" aria-controls="moreMenu">More ▾</button>
+                <div class="more-menu" id="moreMenu" hidden>
+                    <button type="button" data-more-action="profile">Profile / Settings</button>
+                    <button type="button" data-more-action="help">Help</button>
+                    <button type="button" data-more-action="logout">Log out</button>
+                </div>
+            </div>
         </header>
         
         <!-- WELCOME / LANDING -->
@@ -68,16 +76,17 @@
             <div class="section-heading">
                 <div>
                     <span class="step-label">YOUR ACCOUNT</span>
-                    <h2>Welcome to Calorie Compass</h2>
-                    <p>Register or sign in to manage your food diary.</p>
+                    <h2 id="auth-title">Welcome to Calorie Compass</h2>
+                    <p id="auth-subtitle">Create your account to get started.</p>
                 </div>
             </div>
 
             <button type="button" class="button button-secondary back-welcome" id="back-to-welcome">← Back to welcome</button>
 
             <div class="account-grid">
-                <form id="register-form">
+                <form id="register-form" hidden>
                     <h3>Create account</h3>
+                    <div class="register-step" data-register-step="0">
                     <label class="food-field">Full name
                         <input id="full_name" name="full_name" required maxlength="100">
                     </label>
@@ -102,15 +111,33 @@
                         <li data-rule="lower">One lowercase letter</li>
                         <li data-rule="number">One number</li>
                     </ul>
+                    <div class="password-strength">
+                        <div class="password-strength-track">
+                            <div id="password-strength-bar"></div>
+                        </div>
+                        <span id="password-strength-label">Password strength</span>
+                    </div>
+                    <div class="register-wizard-controls"><button type="button" class="button button-primary register-next" data-next-step="1">Next: About you</button></div>
+                    </div>
+                    <div class="register-step" data-register-step="1" hidden>
                     <label class="food-field">Age
                         <input id="age" type="number" min="13" max="100" inputmode="numeric" required>
                     </label>
-                    <label class="food-field">Height (cm)
-                        <input id="height_cm" type="number" min="100" max="230" inputmode="decimal" step="0.1" required>
+                    <label class="food-field"><span id="register-height-label">Height (cm)</span>
+                        <input id="height_cm" type="text" inputmode="decimal" autocomplete="off" required>
                     </label>
-                    <label class="food-field">Weight (kg)
+                    <select class="unit-select" id="register-height-unit" aria-label="Height unit">
+                        <option value="cm">Centimeters (cm)</option><option value="ftin">Feet and inches</option>
+                    </select>
+                    <label class="food-field"><span id="register-weight-label">Weight (kg)</span>
                         <input id="weight_kg" type="number" min="25" max="250" inputmode="decimal" step="0.1" required>
                     </label>
+                    <select class="unit-select" id="register-weight-unit" aria-label="Weight unit">
+                        <option value="kg">Kilograms (kg)</option><option value="lb">Pounds (lb)</option>
+                    </select>
+                    <div class="register-wizard-controls"><button type="button" class="button button-secondary register-back" data-back-step="0">Back</button><button type="button" class="button button-primary register-next" data-next-step="2">Next: Goal</button></div>
+                    </div>
+                    <div class="register-step" data-register-step="2" hidden>
                     <label class="food-field">Activity level
                         <select id="activity_level" required>
                             <option value="">Select</option>
@@ -128,11 +155,18 @@
                             <option value="gain">Gain weight</option>
                         </select>
                     </label>
-                    <button class="button button-primary" type="submit">Register</button>
+                    <label class="food-field" for="register-portion-unit">Food portion unit</label>
+                    <select class="unit-select" id="register-portion-unit"><option value="g">Grams (g)</option><option value="oz">Ounces (oz)</option></select>
+                    <div class="register-wizard-controls"><button type="button" class="button button-secondary register-back" data-back-step="1">Back</button><button class="button button-primary" type="submit">Register</button></div>
+                    </div>
                     <p class="message" id="register-message"></p>
+                    <p class="auth-switch">
+                        Already have an account?
+                        <button type="button" id="show-login">Log in</button>
+                    </p>
                 </form>
 
-                <form id="login-form">
+                <form id="login-form" hidden>
                     <h3>Sign in</h3>
                     <label class="food-field">Email
                         <input id="login-email" type="email" required>
@@ -143,10 +177,124 @@
                             <button type="button" class="password-toggle" data-toggle-password="login-password" aria-label="Show password">Show</button>
                         </div>
                     </label>
-                    <button class="button button-primary" type="submit">Login</button>
+
+                    <button class="button button-primary" type="submit" id="login-submit">Log in</button>
                     <p class="message" id="login-message"></p>
+                    <p class="forgot-link">
+                        <button type="button" id="forgot-password-button">Forgot password?</button>
+                    </p>
+                    <button type="button" class="button button-secondary" id="login-resend-verification" hidden>Resend verification code</button>
+                    <p class="helper-text" id="login-verification-timer"></p>
                 </form>
+            </div>            
+            <!-- EMAIL VERIFICATION -->
+            <div id="verification-panel" hidden>
+                <h3>Verify your email</h3>
+                <p>Enter the 6-digit code we sent to your email.</p>
+
+                <label class="food-field">Verification code
+                    <input id="verification-code" type="text"
+                        inputmode="numeric" maxlength="6"
+                        autocomplete="one-time-code">
+                </label>
+
+                <button class="button button-primary" type="button"
+                        id="verify-email-button">
+                    Verify email
+                </button>
+
+                <button class="button button-secondary" type="button"
+                        id="resend-verification-button">
+                    Resend code
+                </button>
+
+                <p class="message" id="verification-message"></p>
+                <p class="helper-text" id="resend-verification-timer"></p>
             </div>
+
+            <!-- FORGOT PASSWORD -->
+            <div id="forgot-panel" hidden>
+                <h3 id="forgot-title">Reset your password</h3>
+
+                <!-- Step 1: email -->
+                <div id="forgot-step-email">
+                    <label class="food-field">Email
+                        <input id="forgot-email" type="email" autocomplete="email">
+                    </label>
+                    <button class="button button-primary" type="button"
+                            id="forgot-send-code">
+                        Send code
+                    </button>
+                </div>
+
+                <!-- Step 2: OTP -->
+                <div id="forgot-step-code" hidden>
+                    <p>If that email is registered, we've sent a code.</p>
+                    <label class="food-field">6-digit code
+                        <input id="reset-code" maxlength="6" inputmode="numeric"
+                            autocomplete="one-time-code">
+                    </label>
+                    <button class="button button-primary" type="button"
+                            id="forgot-verify-code">
+                        Verify code
+                    </button>
+                    <button class="button button-secondary" type="button"
+                            id="forgot-resend-code">
+                        Resend code
+                    </button>
+                    <p id="reset-resend-timer"></p>
+                </div>
+
+                <!-- Step 3: new password -->
+                <div id="forgot-step-password" hidden>
+                    <label class="food-field">New password
+                        <div class="password-input-wrap">
+                            <input id="reset-password" type="password"
+                                autocomplete="new-password">
+                            <button type="button" class="password-toggle"
+                                    data-toggle-password="reset-password">Show</button>
+                        </div>
+                    </label>
+
+                    <ul class="password-rules" id="reset-password-rules">
+                        <li data-reset-rule="length">At least 8 characters</li>
+                        <li data-reset-rule="upper">One uppercase letter</li>
+                        <li data-reset-rule="lower">One lowercase letter</li>
+                        <li data-reset-rule="number">One number</li>
+                    </ul>
+                    <label class="food-field">Confirm new password
+                        <div class="password-input-wrap">
+                            <input id="reset-confirm-password" type="password"
+                                autocomplete="new-password">
+                            <button type="button" class="password-toggle"
+                                    data-toggle-password="reset-confirm-password">Show</button>
+                        </div>
+                    </label>
+
+                    <button class="button button-primary" type="button"
+                            id="reset-password-button">
+                        Update password
+                    </button>
+                </div>
+
+                <!-- Step 4: success -->
+                <div id="forgot-step-success" hidden>
+                    <h3>Password updated!</h3>
+                    <p>You can now log in using your new password.</p>
+                    <button class="button button-primary" type="button"
+                            id="reset-back-login">
+                        Back to login
+                    </button>
+                </div>
+
+                <p class="message" id="forgot-message"></p>
+
+                <button class="button button-secondary" type="button"
+                        id="forgot-back-login">
+                    ← Back to login
+                </button>
+            </div>
+
         </section>
 
         <!-- USER PROFILE -->
@@ -169,12 +317,20 @@
                 <label class="food-field">Age
                     <input id="profile-age" type="number" min="13" max="100" inputmode="numeric" required>
                 </label>
-                <label class="food-field">Height (cm)
-                    <input id="profile-height" type="number" min="100" max="230" inputmode="decimal" step="0.1" required>
+                <label class="food-field"><span id="profile-height-label">Height (cm)</span>
+                    <input id="profile-height" type="text" inputmode="decimal" autocomplete="off" required>
                 </label>
-                <label class="food-field">Weight (kg)
+                <select class="unit-select" id="profile-height-unit" aria-label="Profile height unit">
+                    <option value="cm">Centimeters (cm)</option><option value="ftin">Feet and inches</option>
+                </select>
+                <label class="food-field"><span id="profile-weight-label">Weight (kg)</span>
                     <input id="profile-weight" type="number" min="25" max="250" inputmode="decimal" step="0.1" required>
                 </label>
+                <select class="unit-select" id="profile-weight-unit" aria-label="Profile weight unit">
+                    <option value="kg">Kilograms (kg)</option><option value="lb">Pounds (lb)</option>
+                </select>
+                <label class="food-field" for="profile-portion-unit">Food portion unit</label>
+                <select class="unit-select" id="profile-portion-unit"><option value="g">Grams (g)</option><option value="oz">Ounces (oz)</option></select>
                 <label class="food-field">Activity level
                     <select id="profile-activity" required>
                         <option value="sedentary">Sedentary</option>
@@ -195,6 +351,38 @@
             </form>
         </section>
 
+        <!-- PHASE 2: MAIN APP NAVIGATION -->
+        <nav class="app-navigation" id="app-navigation" aria-label="Main navigation" hidden>
+            <button type="button" class="app-nav-button active" data-screen="home">Home</button>
+            <button type="button" class="app-nav-button" data-screen="diary">Diary</button>
+            <button type="button" class="app-nav-button" data-screen="scan">＋ Scan</button>
+            <button type="button" class="app-nav-button" data-screen="activity">Activity</button>
+            <button type="button" class="app-nav-button" data-screen="progress">Progress</button>
+        </nav>
+
+
+        <!-- HOME DASHBOARD -->
+        <section class="panel home-panel" id="homePanel" hidden aria-labelledby="homeTitle">
+            <span class="step-label">YOUR DAILY OVERVIEW</span>
+            <h2 id="homeTitle">Welcome back!</h2>
+            <p>What would you like to do today?</p>
+            <div class="home-calorie-card" id="home-calorie-card">
+                <div class="home-calorie-stats">
+                    <div><span>Consumed today</span><strong id="home-intake">0 kcal</strong></div>
+                    <div id="home-target-wrap" hidden><span>Estimated daily target</span><strong id="home-target">—</strong></div>
+                    <div id="home-remaining-wrap" hidden><span>Remaining</span><strong id="home-remaining">—</strong></div>
+                </div>
+                <div class="home-progress-track" hidden><div id="home-progress" class="home-progress-fill"></div></div>
+                <p id="home-target-note" class="helper-text">Calorie values are estimates, not medical advice.</p>
+            </div>
+            <div class="home-shortcuts">
+                <button type="button" data-go-screen="scan"><strong>📷 Scan a meal</strong><span>Take or upload a food photo for an estimate.</span></button>
+                <button type="button" data-go-screen="diary"><strong>📔 Food diary</strong><span>Review what you have logged today.</span></button>
+                <button type="button" data-go-screen="activity"><strong>🏃 Track activity</strong><span>Log movement and estimate calories burned.</span></button>
+                <button type="button" data-go-screen="progress"><strong>📈 Your progress</strong><span>Track your weight over time.</span></button>
+            </div>
+        </section>
+
         <section class="intro">
             <p class="eyebrow">FOOD JOURNAL</p>
             <h1>A little more mindful,<br><span>one meal at a time.</span></h1>
@@ -204,15 +392,14 @@
         <section class="panel capture-panel" aria-labelledby="captureTitle">
             <div class="section-heading">
                 <div>
-                    <span class="step-label">STEP 01</span>
                     <h2 id="captureTitle">Add your food</h2>
                     <p>Start with a photo of what you're eating.</p>
                 </div>
                 <span class="heading-icon"><svg class="icon"><use href="#i-camera"></use></svg></span>
             </div>
 
-            <input type="file" id="foodImage" accept="image/jpeg,image/png,image/webp" hidden>
-            <input type="file" id="cameraImage" accept="image/jpeg,image/png,image/webp" capture="environment" hidden>
+            <input type="file" id="foodImage" accept="image/jpeg,image/png,image/webp" aria-label="Upload food image" hidden>
+            <input type="file" id="cameraImage" accept="image/jpeg,image/png,image/webp" capture="environment" aria-label="Take food photo" hidden>
 
             <button type="button" class="drop-zone" id="dropZone" aria-label="Choose a food photo">
                 <span class="drop-icon"><svg class="icon"><use href="#i-image"></use></svg></span>
@@ -221,6 +408,9 @@
                 <span class="drop-hint">You can also drag and drop an image here</span>
             </button>
 
+            <div class="photo-tips" aria-label="Photo tips">
+                <span>💡 Tips: use good lighting</span><span>Keep the whole plate in frame</span><span>Try a clear, overhead photo</span>
+            </div>
             <div class="photo-actions">
                 <button type="button" class="button button-secondary" id="cameraBtn">
                     <svg class="icon"><use href="#i-camera"></use></svg> Take photo
@@ -251,7 +441,6 @@
         <section class="panel results-panel" id="resultsPanel" aria-labelledby="resultsTitle">
             <div class="section-heading">
                 <div>
-                    <span class="step-label">STEP 02</span>
                     <h2 id="resultsTitle">Review your food</h2>
                     <p>AI estimates are a starting point. Adjust them to match your meal.</p>
                 </div>
@@ -263,9 +452,17 @@
                 <strong>Your food results will appear here</strong>
                 <span>Choose a photo and identify your food to get started.</span>
             </div>
+            <div class="scan-settings-row">
+                <div class="unit-row"><label for="food-portion-unit">Portion display</label>
+                    <select class="unit-select" id="food-portion-unit"><option value="g">Grams (g)</option><option value="oz">Ounces (oz)</option></select>
+                </div>
+                <div class="unit-row"><label for="meal-type-select">Meal</label>
+                    <select class="unit-select" id="meal-type-select"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option><option>Unspecified</option></select>
+                </div>
+            </div>
             <div id="recognitionResults" class="results-list"></div>
 
-            <div class="fallback-panel" id="fallbackPanel" hidden>
+            <div class="fallback-panel" id="fallbackPanel">
                 <div class="fallback-heading">
                     <span class="fallback-mark">?</span>
                     <div><strong>Not sure about this one</strong><p>You can enter the food name yourself. Please verify its nutrition values.</p></div>
@@ -288,14 +485,13 @@
                     <button type="button" class="suggestion-chip" data-food="Cappuccino">Cappuccino</button>
                 </div>
                 <button type="button" class="button button-outline" id="addManualFoodBtn">Add this food manually</button>
-                <p class="helper-text">Manual entries need a portion in grams and a calorie estimate per 100 g before saving.</p>
+                <p class="helper-text">Quick suggestions are a small local list—not a searchable nutrition database. Unknown foods need a portion and verified calorie estimate per 100 g.</p>
             </div>
         </section>
 
         <section class="panel diary-panel" aria-labelledby="diaryTitle">
             <div class="section-heading diary-heading">
                 <div>
-                    <span class="step-label">STEP 03</span>
                     <h2 id="diaryTitle">Food diary</h2>
                     <p>Your saved meals, all in one place.</p>
                 </div>
@@ -303,6 +499,12 @@
                     <svg class="icon"><use href="#i-refresh"></use></svg>
                 </button>
             </div>
+            <div class="diary-date-tools">
+                <label for="diary-date-filter">Show entries for</label>
+                <input type="date" id="diary-date-filter">
+                <button type="button" class="button button-secondary" id="diary-clear-date">All entries</button>
+            </div>
+            <div class="diary-summary" id="diary-summary" aria-live="polite">Select a date to see its calorie total.</div>
             <div id="foodEntries" class="diary-list">
                 <div class="diary-loading"><span class="spinner small"></span> Loading your diary...</div>
             </div>
@@ -311,7 +513,6 @@
     <section class="panel activity-panel" id="activityPanel" hidden aria-labelledby="activityTitle">
       <div class="section-heading">
         <div>
-          <span class="step-label">STEP 04</span>
           <h2 id="activityTitle">Activity tracking</h2>
           <p>Log your workouts, estimate calories burned, and explore quick fitness ideas.</p>
         </div>
@@ -387,7 +588,6 @@
     <section class="panel weight-panel" id="weightPanel" hidden aria-labelledby="weightTitle">
       <div class="section-heading">
         <div>
-          <span class="step-label">STEP 05</span>
           <h2 id="weightTitle">Weight &amp; progress</h2>
           <p>Record your weight over time and track your trend visually.</p>
         </div>
@@ -398,9 +598,12 @@
 
       <div class="field-grid">
         <label class="food-field" for="weightInput">
-          <span>Weight (kg)</span>
+          <span id="weight-log-label">Weight (kg)</span>
           <input type="number" id="weightInput" min="20" max="500" step="0.1" placeholder="e.g. 64.5">
         </label>
+        <select class="unit-select" id="weight-log-unit" aria-label="Weight log unit">
+          <option value="kg">Kilograms (kg)</option><option value="lb">Pounds (lb)</option>
+        </select>
 
         <label class="food-field" for="weightNoteInput">
           <span>Note (optional)</span>
@@ -442,6 +645,18 @@
         <div class="diary-empty">No weight entries yet. Log your first weight above.</div>
       </div>
     </section>
+        <section class="help-modal" id="helpModal" hidden role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+            <div class="help-modal-card">
+                <button type="button" class="help-close" id="helpClose" aria-label="Close help">×</button>
+                <h2 id="helpTitle">Calorie Compass Help</h2>
+                <p><strong>Scan:</strong> upload or take a clear food photo, review the AI estimate, correct food/portion details, then save.</p>
+                <p><strong>Diary:</strong> see and manage saved food entries. Estimates are approximate.</p>
+                <p><strong>Activity:</strong> log activity and duration for estimated calories burned.</p>
+                <p><strong>Progress:</strong> record weight to view your trend.</p>
+                <p>If recognition is uncertain, use manual food entry and verify calories per 100 g.</p>
+            </div>
+        </section>
+
         <footer class="footer-note">
             <svg class="icon"><use href="#i-leaf"></use></svg>
             <span>Calorie estimates are approximate. Always review and adjust your entries.</span>

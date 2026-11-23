@@ -1206,3 +1206,241 @@ button:focus-visible, input:focus-visible {
 .account-panel select {
     font-size: 16px;
 }
+/* Separate Login and Registration Screens */
+.account-grid {
+    display: block;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.account-grid form[hidden] {
+    display: none !important;
+}
+
+.account-grid form {
+    width: 100%;
+}
+
+.auth-switch {
+    margin-top: 14px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.auth-switch button {
+    border: none;
+    background: none;
+    color: var(--green-700);
+    font-weight: 600;
+    cursor: pointer;
+    font: inherit;
+}
+
+.auth-switch button:hover {
+    text-decoration: underline;
+}
+
+#register-form,
+#login-form {
+    padding: 4px 0;
+}
+
+/* Auth and password security UI */
+.forgot-link {
+    text-align: right;
+    margin: 4px 0 12px;
+}
+
+.forgot-link button {
+    background: none;
+    border: none;
+    color: var(--green-700);
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+}
+
+.forgot-link button:hover {
+    text-decoration: underline;
+}
+
+#verification-panel,
+#forgot-panel {
+    max-width: 480px;
+    margin: 24px auto;
+}
+
+#verification-panel .button,
+#forgot-panel .button {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.password-strength {
+    margin: 4px 0 12px;
+}
+
+.password-strength-track {
+    height: 6px;
+    background: #e5eae2;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+#password-strength-bar {
+    height: 100%;
+    width: 0;
+    background: var(--green-700);
+    border-radius: inherit;
+    transition: width 0.2s ease;
+}
+
+#password-strength-label {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.password-rules {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 12px;
+    display: grid;
+    gap: 5px;
+    font-size: 13px;
+}
+
+.password-rules li {
+    color: var(--muted);
+}
+
+.password-rules li::before {
+    content: "○ ";
+}
+
+.password-rules li.passed {
+    color: var(--green-700);
+}
+
+.password-rules li.passed::before {
+    content: "✓ ";
+}
+
+button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+#reset-resend-timer {
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+/* Calorie Compass app navigation and compact mobile layout */
+.app-navigation { display:none; gap:8px; margin:12px 0 22px; padding:8px; background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
+.app-nav-button,.profile-nav-button { border:0; border-radius:12px; background:transparent; color:var(--green-900); min-height:44px; padding:10px 14px; font-size:14px; font-weight:600; }
+.app-nav-button.active,.profile-nav-button.active { background:var(--sage-100); color:var(--green-900); }
+.profile-nav-button { display:none; border:1px solid var(--line); margin-left:auto; }
+.register-step[hidden],.app-navigation[hidden],.profile-nav-button[hidden] { display:none !important; }
+.register-wizard-controls { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 4px; }
+.register-wizard-controls button { min-height:46px; flex:1 1 130px; }
+#login-submit { width:100%; min-height:48px; margin-top:10px; }
+input,select,textarea { font-size:16px; }
+@media (min-width:760px) {
+ .app-shell { width:min(100%,1120px); }
+ .app-navigation { display:flex; }
+ .app-nav-button { flex:1; }
+ .profile-nav-button { display:inline-flex; align-items:center; justify-content:center; }
+}
+@media (max-width:759px) {
+ body { padding:0 12px 110px; }
+ .panel { padding:18px; border-radius:18px; }
+ .app-navigation { display:flex; position:fixed; z-index:100; left:10px; right:10px; bottom:10px; margin:0; padding:7px; gap:3px; border-radius:18px; box-shadow:0 8px 28px rgba(24,52,34,.18); }
+ .app-nav-button { flex:1; min-width:0; min-height:48px; padding:8px 4px; font-size:11px; border-radius:13px; }
+ .app-nav-button[data-screen="scan"] { background:var(--green-800); color:white; font-weight:800; transform:translateY(-7px); box-shadow:0 5px 12px rgba(49,91,64,.22); }
+ .app-nav-button.active:not([data-screen="scan"]) { background:var(--sage-100); }
+ .profile-nav-button { display:none !important; }
+ .save-dock { bottom:84px; }
+ .topbar-note { display:none; }
+}
+.home-shortcuts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:22px; }
+.home-shortcuts button { text-align:left; border:1px solid var(--line); background:var(--white); color:var(--ink); border-radius:16px; padding:16px; min-height:100px; }
+.home-shortcuts button strong,.home-shortcuts button span { display:block; }
+.home-shortcuts button strong { color:var(--green-900); font:600 15px "Poppins",sans-serif; margin-bottom:7px; }
+.home-shortcuts button span { color:var(--muted); font-size:13px; line-height:1.45; }
+@media(max-width:480px){ .home-shortcuts { grid-template-columns:1fr; } .home-shortcuts button { min-height:76px; } }
+@media (max-width:759px){ .profile-nav-button { display:inline-flex !important; min-height:40px; padding:8px 10px; font-size:12px; } }
+@media (min-width:760px){
+ .app-shell:has(#app-navigation:not([hidden])) { display:grid; grid-template-columns:210px minmax(0,1fr); column-gap:24px; align-items:start; width:min(100%,1240px); }
+ .app-shell:has(#app-navigation:not([hidden])) > .topbar { grid-column:1 / -1; grid-row:1; }
+ .app-shell:has(#app-navigation:not([hidden])) > #app-navigation { grid-column:1; grid-row:2; position:sticky; top:18px; display:flex; flex-direction:column; align-items:stretch; padding:12px; margin:16px 0; }
+ .app-shell:has(#app-navigation:not([hidden])) > #app-navigation .app-nav-button { text-align:left; padding:14px; }
+ .app-shell:has(#app-navigation:not([hidden])) > .intro,
+ .app-shell:has(#app-navigation:not([hidden])) > .panel,
+ .app-shell:has(#app-navigation:not([hidden])) > .footer-note { grid-column:2; }
+}
+@media(max-width:759px){ .app-shell:has(#app-navigation:not([hidden])) { display:block; } }
+
+/* Phase 3/4 completion: photo guidance and portion stepper, touch-friendly controls */
+.photo-tips { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 14px; color:var(--muted); font-size:13px; }
+.photo-tips span { background:var(--sage-100); border-radius:999px; padding:7px 10px; }
+.portion-stepper { display:flex; gap:8px; margin-top:8px; }
+.portion-stepper button { flex:1; min-height:44px; border:1px solid var(--line); border-radius:12px; background:var(--sage-100); color:var(--green-900); font-size:14px; font-weight:600; }
+.portion-stepper button:active { transform:scale(.98); }
+@media(max-width:759px){
+  .app-shell:has(#app-navigation:not([hidden])) { padding-bottom:100px; }
+  .app-navigation .app-nav-button[data-screen="scan"] { min-height:52px; }
+  .photo-tips { display:grid; grid-template-columns:1fr; }
+  .photo-actions { gap:10px; }
+  .photo-actions .button { min-height:48px; }
+  .recognized-food { overflow-wrap:anywhere; }
+  .field-grid { grid-template-columns:minmax(0,1fr); }
+  .save-dock { left:12px; right:12px; }
+}
+.more-menu-wrap { position:relative; margin-left:auto; }
+.more-menu { position:absolute; top:calc(100% + 8px); right:0; z-index:110; width:190px; padding:7px; border:1px solid var(--line); border-radius:14px; background:#fff; box-shadow:var(--shadow); }
+.more-menu[hidden] { display:none !important; }
+.more-menu button { display:block; width:100%; text-align:left; border:0; border-radius:10px; padding:12px; min-height:44px; background:transparent; color:var(--ink); }
+.more-menu button:hover { background:var(--sage-100); }
+.help-modal { position:fixed; inset:0; z-index:150; display:grid; place-items:center; padding:18px; background:rgba(20,35,24,.45); }
+.help-modal[hidden] { display:none !important; }
+.help-modal-card { width:min(100%,520px); position:relative; background:white; border-radius:22px; padding:26px; box-shadow:0 18px 50px rgba(0,0,0,.2); line-height:1.55; }
+.help-modal-card h2 { margin-top:0; color:var(--green-900); font-family:Poppins,sans-serif; }
+.help-close { position:absolute; right:12px; top:12px; width:44px; height:44px; border:0; border-radius:12px; background:var(--sage-100); font-size:24px; }
+@media(max-width:759px){ .more-menu-wrap { margin-left:0; } .profile-nav-button { min-height:44px !important; } }
+/* Loading shimmer for photo-recognition wait state */
+.loading-state::after { content:""; display:block; width:100%; height:8px; margin-top:12px; border-radius:999px; background:linear-gradient(90deg,var(--sage-100) 20%,var(--sage-200) 45%,var(--sage-100) 70%); background-size:200% 100%; animation:cc-shimmer 1.25s ease-in-out infinite; }
+@keyframes cc-shimmer { 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }
+
+/* Phase-completion controls: unit selection, diary filters, dashboard and editing */
+.unit-select { min-height: 44px; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); font: inherit; }
+.unit-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 12px; }
+.unit-row label { color:var(--muted); font-size:13px; font-weight:600; }
+.unit-row .unit-select { width:auto; min-width:145px; }
+.scan-settings-row { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:8px; }
+.scan-settings-row .unit-row { flex:1 1 180px; }
+.diary-date-tools { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin:0 0 12px; }
+.diary-date-tools label { color:var(--muted); font-size:13px; font-weight:600; }
+.diary-date-tools input { min-height:44px; padding:9px 12px; border:1px solid var(--line); border-radius:12px; font:inherit; }
+.diary-date-tools button { min-height:44px; }
+.diary-summary { margin:0 0 14px; padding:13px 15px; border-radius:14px; background:var(--sage-100); color:var(--green-900); font-size:14px; font-weight:700; }
+.edit-entry-button { flex:0 0 auto; min-width:44px; min-height:40px; padding:7px 10px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--green-800); font-size:12px; font-weight:700; }
+.home-calorie-card { margin:16px 0 22px; padding:17px; border-radius:18px; background:var(--sage-100); }
+.home-calorie-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.home-calorie-stats > div { min-width:0; }
+.home-calorie-stats span { display:block; color:var(--muted); font-size:11px; line-height:1.4; }
+.home-calorie-stats strong { display:block; margin-top:4px; color:var(--green-900); font:700 16px "Poppins",sans-serif; overflow-wrap:anywhere; }
+.home-progress-track { height:10px; margin-top:14px; overflow:hidden; border-radius:999px; background:#d4e2d1; }
+.home-progress-fill { width:0; height:100%; border-radius:inherit; background:var(--coral); transition:width .3s ease; }
+.home-calorie-card .helper-text { margin:10px 0 0; font-size:11px; line-height:1.5; }
+@media(max-width:520px) {
+ .diary-date-tools { align-items:stretch; }
+ .diary-date-tools input { flex:1 1 140px; min-width:0; }
+ .diary-entry { flex-wrap:wrap; }
+ .edit-entry-button,.delete-button { min-width:44px; min-height:44px; }
+ .home-calorie-stats strong { font-size:14px; }
+}
+.suggestion-chip[hidden] { display:none !important; }
