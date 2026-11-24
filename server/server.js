@@ -36,6 +36,19 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "../html/index.html"));
 });
 const db = require("./db");
+
+// API requests wait for database setup. Cache initialization for warm serverless instances.
+app.use("/api", async (req, res, next) => {
+    try {
+        databaseInitialization ||= initializeDatabase();
+        await databaseInitialization;
+        next();
+    } catch (error) {
+        databaseInitialization = null;
+        console.error("Database initialization failed:", error.message);
+        res.status(503).json({ message: "Service temporarily unavailable." });
+    }
+});
 // Gemini AI setup
 const genAI = process.env.GEMINI_API_KEY
     ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
@@ -933,19 +946,6 @@ async function initializeDatabase() {
     await initUserUnitPreferences();
     await initPasswordResetSessions();
 }
-
-// API requests wait for database setup. Cache initialization for warm serverless instances.
-app.use("/api", async (req, res, next) => {
-    try {
-        databaseInitialization ||= initializeDatabase();
-        await databaseInitialization;
-        next();
-    } catch (error) {
-        databaseInitialization = null;
-        console.error("Database initialization failed:", error.message);
-        res.status(503).json({ message: "Service temporarily unavailable." });
-    }
-});
 
 // Local development server; Vercel imports the app without listening.
 if (require.main === module) {
