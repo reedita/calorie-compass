@@ -12,6 +12,7 @@ require("dotenv").config({
 });
 
 const app = express();
+let databaseInitialization;
 app.disable("x-powered-by");
 app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -915,36 +916,46 @@ async function initPasswordResetSessions() {
 }
 
 
-// Start server
-async function startServer() {
-    try {
-        if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-            throw new Error("JWT_SECRET must be configured with at least 32 characters.");
-        }
-        const connection = await db.getConnection();
-        console.log("MySQL database connected successfully!");
-        connection.release();
-        const [tableRows] = await db.query("SHOW TABLES");
-        const tableNames = tableRows.map(row => Object.values(row)[0]);
-        const requiredTables = ["users", "auth_codes", "food_entries"];
-        const missingTables = requiredTables.filter(tableName => !tableNames.includes(tableName));
-        if (missingTables.length) throw new Error(`Missing required database tables: ${missingTables.join(", ")}. Import database/schema.sql first.`);
-        await initActivityAndWeightTables();
-        await initUserUnitPreferences();
-        await initPasswordResetSessions();
-
-        const PORT = process.env.PORT || 3000;
-
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-        });
-
-    } catch (error) {
-        console.error("Database initialization failed:", error.message);
+// Initialize the database once per runtime (local or serverless).
+async function initializeDatabase() {
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+        throw new Error("JWT_SECRET must be configured with at least 32 characters.");
     }
+    const connection = await db.getConnection();
+    console.log("MySQL database connected successfully!");
+    connection.release();
+    const [tableRows] = await db.query("SHOW TABLES");
+    const tableNames = tableRows.map(row => Object.values(row)[0]);
+    const requiredTables = ["users", "auth_codes", "food_entries"];
+    const missingTables = requiredTables.filter(tableName => !tableNames.includes(tableName));
+    if (missingTables.length) throw new Error(`Missing required database tables: ${missingTables.join(", ")}. Import database/schema.sql first.`);
+    await initActivityAndWeightTables();
+    await initUserUnitPreferences();
+    await initPasswordResetSessions();
 }
 
-startServer();
+// API requests wait for database setup. Cache initialization for warm serverless instances.
+app.use("/api", async (req, res, next) => {
+    try {
+        databaseInitialization ||= initializeDatabase();
+        await databaseInitialization;
+        next();
+    } catch (error) {
+        databaseInitialization = null;
+        console.error("Database initialization failed:", error.message);
+        res.status(503).json({ message: "Service temporarily unavailable." });
+    }
+});
+
+// Local development server; Vercel imports the app without listening.
+if (require.main === module) {
+    initializeDatabase()
+        .then(() => {
+            const PORT = process.env.PORT || 3000;
+            app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+        })
+        .catch(error => console.error("Database initialization failed:", error.message));
+}
 
 
  // ======================================
