@@ -1,4 +1,3 @@
-const nodemailer = require("nodemailer");
 const rateLimit = require("express-rate-limit");
 const crypto = require("crypto");
 const path = require("path");
@@ -13,6 +12,7 @@ require("dotenv").config({
 });
 
 const app = express();
+let databaseInitialization;
 app.disable("x-powered-by");
 app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -36,6 +36,19 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "../html/index.html"));
 });
 const db = require("./db");
+
+// API requests wait for database setup. Cache initialization for warm serverless instances.
+app.use("/api", async (req, res, next) => {
+    try {
+        databaseInitialization ||= initializeDatabase();
+        await databaseInitialization;
+        next();
+    } catch (error) {
+        databaseInitialization = null;
+        console.error("Database initialization failed:", error.message);
+        res.status(503).json({ message: "Service temporarily unavailable." });
+    }
+});
 // Gemini AI setup
 const genAI = process.env.GEMINI_API_KEY
     ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
@@ -45,10 +58,12 @@ const genAI = process.env.GEMINI_API_KEY
 // AUTH EMAIL + SECURITY CONFIGURATION
 // ======================================
 
+const nodemailer = require("nodemailer");
+
 const emailTransporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: Number(process.env.SMTP_PORT) === 465,
+    port: Number(process.env.SMTP_PORT),
+    secure: true,
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
@@ -914,36 +929,37 @@ async function initPasswordResetSessions() {
 }
 
 
-// Start server
-async function startServer() {
-    try {
-        if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-            throw new Error("JWT_SECRET must be configured with at least 32 characters.");
-        }
-        const connection = await db.getConnection();
-        console.log("MySQL database connected successfully!");
-        connection.release();
-        const [tableRows] = await db.query("SHOW TABLES");
-        const tableNames = tableRows.map(row => Object.values(row)[0]);
-        const requiredTables = ["users", "auth_codes", "food_entries"];
-        const missingTables = requiredTables.filter(tableName => !tableNames.includes(tableName));
-        if (missingTables.length) throw new Error(`Missing required database tables: ${missingTables.join(", ")}. Import database/schema.sql first.`);
-        await initActivityAndWeightTables();
-        await initUserUnitPreferences();
-        await initPasswordResetSessions();
-
-        const PORT = process.env.PORT || 3000;
-
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-        });
-
-    } catch (error) {
-        console.error("Database initialization failed:", error.message);
+// Initialize the database once per runtime (local or serverless).
+async function initializeDatabase() {
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+        throw new Error("JWT_SECRET must be configured with at least 32 characters.");
     }
+    const connection = await db.getConnection();
+    console.log("MySQL database connected successfully!");
+    connection.release();
+    const [tableRows] = await db.query("SHOW TABLES");
+    const tableNames = tableRows.map(row => Object.values(row)[0]);
+    const requiredTables = ["users", "auth_codes", "food_entries"];
+    const missingTables = requiredTables.filter(tableName => !tableNames.includes(tableName));
+    if (missingTables.length) throw new Error(`Missing required database tables: ${missingTables.join(", ")}. Import database/schema.sql first.`);
+    await initActivityAndWeightTables();
+    await initUserUnitPreferences();
+    await initPasswordResetSessions();
 }
 
-startServer();
+// Local development server; Vercel imports the app without listening.
+if (require.main === module) {
+    databaseInitialization = initializeDatabase();
+    databaseInitialization
+        .then(() => {
+            const PORT = process.env.PORT || 3000;
+            app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+        })
+        .catch(error => {
+            databaseInitialization = null;
+            console.error("Database initialization failed:", error.message);
+        });
+}
 
 
  // ======================================
