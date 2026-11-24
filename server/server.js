@@ -949,12 +949,16 @@ async function initializeDatabase() {
 
 // Local development server; Vercel imports the app without listening.
 if (require.main === module) {
-    initializeDatabase()
+    databaseInitialization = initializeDatabase();
+    databaseInitialization
         .then(() => {
             const PORT = process.env.PORT || 3000;
             app.listen(PORT, () => console.log(`Server running on ${PORT}`));
         })
-        .catch(error => console.error("Database initialization failed:", error.message));
+        .catch(error => {
+            databaseInitialization = null;
+            console.error("Database initialization failed:", error.message);
+        });
 }
 
 
