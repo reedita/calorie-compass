@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
-    "test": "node --check server/server.js && node --check js/app.js"
+    "test": "node --check server/server.js && node --check server/db.js && node --check js/app.js"
   },
   "dependencies": {
     "@google/genai": "^3.0.0",
@@ -17,8 +17,8 @@
     "express-rate-limit": "^8.7.5",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
-    "mysql2": "^3.14.0",
-    "nodemailer": "^10.6.1"
+    "nodemailer": "^10.6.1",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
