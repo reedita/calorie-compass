@@ -902,49 +902,53 @@ app.post(
     }
 );
 
-async function initUserUnitPreferences() {
-    const columns = [
-        ["height_unit", "VARCHAR(5) NOT NULL DEFAULT 'cm'"],
-        ["weight_unit", "VARCHAR(2) NOT NULL DEFAULT 'kg'"],
-        ["portion_unit", "VARCHAR(2) NOT NULL DEFAULT 'g'"]
-    ];
-    for (const [columnName, definition] of columns) {
-        const [existing] = await db.query(`SHOW COLUMNS FROM users LIKE ?`, [columnName]);
-        if (!existing.length) await db.query(`ALTER TABLE users ADD COLUMN ${columnName} ${definition}`);
-    }
-}
 
+async function initUserUnitPreferences() {
+   
+}
 
 async function initPasswordResetSessions() {
-    await db.query(`CREATE TABLE IF NOT EXISTS password_reset_sessions (
-        session_id CHAR(36) PRIMARY KEY,
-        email VARCHAR(255) NOT NULL,
-        expires_at DATETIME NOT NULL,
-        used TINYINT(1) NOT NULL DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_reset_session_email (email)
-    )`);
-    await db.execute("DELETE FROM password_reset_sessions WHERE expires_at < NOW() OR used = 1");
-    await db.execute("DELETE FROM auth_codes WHERE expires_at < NOW() OR (used = 1 AND created_at < DATE_SUB(NOW(), INTERVAL 7 DAY))");
+    
 }
+
 
 
 // Initialize the database once per runtime (local or serverless).
+
 async function initializeDatabase() {
     if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
         throw new Error("JWT_SECRET must be configured with at least 32 characters.");
     }
-    const connection = await db.getConnection();
-    console.log("MySQL database connected successfully!");
-    connection.release();
-    const [tableRows] = await db.query("SHOW TABLES");
-    const tableNames = tableRows.map(row => Object.values(row)[0]);
-    const requiredTables = ["users", "auth_codes", "food_entries"];
-    const missingTables = requiredTables.filter(tableName => !tableNames.includes(tableName));
-    if (missingTables.length) throw new Error(`Missing required database tables: ${missingTables.join(", ")}. Import database/schema.sql first.`);
-    await initActivityAndWeightTables();
-    await initUserUnitPreferences();
-    await initPasswordResetSessions();
+
+    await db.connect();
+    console.log("PostgreSQL database connected successfully!");
+
+    const [tableRows] = await db.query(
+        `SELECT table_name
+         FROM information_schema.tables
+         WHERE table_schema = 'public'`
+    );
+
+    const tableNames = tableRows.map(row => row.table_name);
+
+    const requiredTables = [
+        "users",
+        "auth_codes",
+        "food_entries",
+        "activity_entries",
+        "weight_entries",
+        "password_reset_sessions"
+    ];
+
+    const missingTables = requiredTables.filter(
+        tableName => !tableNames.includes(tableName)
+    );
+
+    if (missingTables.length) {
+        throw new Error(
+            `Missing database tables: ${missingTables.join(", ")}. Run database/schema.sql in Supabase SQL Editor.`
+        );
+    }
 }
 
 // Local development server; Vercel imports the app without listening.
@@ -1164,39 +1168,11 @@ app.delete("/api/food-entries/:entryId", authenticateToken, async (req, res) => 
 // ACTIVITY & WEIGHT TABLES + ROUTES (NAILA)
 // --------------------------------------------------
 
+
 async function initActivityAndWeightTables() {
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS activity_entries (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            activity_name VARCHAR(120) NOT NULL,
-            duration_minutes INT NOT NULL,
-            calories_burned DECIMAL(8, 2) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_activity_user (user_id)
-        )
-    `);
-
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS weight_entries (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            weight_kg DECIMAL(5, 2) NOT NULL,
-            note VARCHAR(150) DEFAULT '',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_weight_user (user_id)
-        )
-    `);
-
-    // Add user_id to tables created by the earlier version of Naila's code.
-    for (const table of ["activity_entries", "weight_entries"]) {
-        const [columns] = await db.query(`SHOW COLUMNS FROM ${table} LIKE 'user_id'`);
-        if (columns.length === 0) {
-            await db.query(`ALTER TABLE ${table} ADD COLUMN user_id INT NULL`);
-            await db.query(`CREATE INDEX idx_${table}_user ON ${table}(user_id)`);
-        }
-    }
+    
 }
+
 
 // Retrieve logged activities
 app.get("/api/activities", authenticateToken, async (req, res) => {
